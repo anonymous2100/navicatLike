@@ -88,6 +88,26 @@ java -cp target/lightDbViewer-0.0.1.jar:$(echo lib/*.jar | tr ' ' ':') com.ctgu.
 
 启动后自动弹出连接对话框，填写数据库信息即可连接。
 
+## 界面截图
+
+> 以下截图均来自 `pic` 目录。
+
+### 主界面与对象浏览
+
+![主界面与对象浏览](pic/ScreenShot_2026-04-28_124559_353.png)
+
+### 表数据浏览与编辑
+
+![表数据浏览与编辑](pic/ScreenShot_2026-04-28_124626_086.png)
+
+### SQL 查询与结果面板
+
+![SQL 查询与结果面板](pic/ScreenShot_2026-04-28_124720_503.png)
+
+### 表结构设计
+
+![表结构设计](pic/ScreenShot_2026-04-28_124730_127.png)
+
 ### 测试
 
 ```bash
@@ -267,80 +287,80 @@ SQL 编辑器 → 点击运行 → QueryTab
 
 ```
 src/main/java/com/ctgu/lightdbviewer/
-├── MainApp.java                 # 应用入口
-├── config/                      # 配置层
-│   ├── AppConfig.java           # 全局配置单例
-│   ├── SavedConnection.java     # 连接信息 DTO
-│   ├── PasswordCipher.java      # AES-256-GCM 密码加密
-│   └── ConnectionImportExport.java  # 导入/导出
-├── db/                          # 数据库方言层
-│   ├── DbType.java              # 类型枚举
-│   ├── Dialect.java             # 方言接口 (13 方法)
-│   ├── DialectFactory.java      # 工厂
-│   ├── MySQLDialect.java        # MySQL 实现
-│   └── PostgreSQLDialect.java   # PostgreSQL 实现
-├── jdbc/                        # JDBC 操作层
-│   ├── ConnectionManager.java   # HikariCP 连接池管理器
-│   ├── JdbcExecutor.java        # SQL 执行器
-│   ├── SqlBuilder.java          # 安全 SQL 构建
-│   └── JdbcRowWriter.java       # 事务性 DML 写入器
-├── service/                     # 服务层
-│   ├── QueryService.java        # SQL 查询服务
-│   ├── TableDataService.java    # 表数据加载服务
-│   └── TransactionService.java  # 事务管理
-├── metadata/                    # 元数据层
-│   ├── MetadataService.java     # 元数据外观
-│   ├── ColumnInfo.java          # 列元数据
-│   └── TableMeta.java           # 表元数据
-├── model/                       # 数据模型
-│   ├── DbConfig.java            # 连接配置
-│   └── SqlParameter.java        # SQL 参数
-├── i18n/                        # 国际化
-│   └── I18nManager.java         # 国际化管理器
-├── util/                        # 工具类
-│   ├── FontManager.java         # 字体管理
-│   ├── ThemeManager.java        # 主题管理
-│   ├── ErrorHandler.java        # 错误处理
-│   └── SwingUtil.java           # Swing 辅助
-└── ui/                          # UI 层
-    ├── frame/
-    │   ├── MainFrame.java       # 主窗口
-    │   └── SettingsDialog.java  # 设置对话框
-    ├── workspace/
-    │   ├── WorkspaceTabs.java   # 标签页容器
-    │   ├── TabManager.java      # 标签页管理器
-    │   └── tab/
-    │       ├── AbstractTab.java
-    │       ├── TableDataTab.java
-    │       ├── QueryTab.java
-    │       ├── DesignTableTab.java
-    │       └── ObjectListTab.java
-    ├── explorer/
-    │   ├── ObjectExplorerPanel.java
-    │   ├── ExplorerTreeNode.java
-    │   ├── ExplorerNodeType.java
-    │   ├── ExplorerTreeCellRenderer.java
-    │   └── ExplorerPopupMenuFactory.java
-    ├── table/
-    │   ├── DataGridPanel.java
-    │   ├── DataToolbar.java
-    │   ├── EditableResultTableModel.java
-    │   ├── PagedResultTableModel.java
-    │   ├── RowChange.java / ChangeType.java
-    │   ├── TypedCellEditor.java
-    │   └── RowStateRenderer.java
-    ├── sql/
-    │   ├── SqlEditorPanel.java
-    │   ├── SqlResultPanel.java
-    │   └── SqlToolbar.java
-    ├── common/
-    │   ├── UiConstants.java
-    │   ├── ConfirmDialog.java
-    │   ├── MenuBuilder.java
-    │   ├── ToolbarIconFactory.java
-    │   ├── LoadingIndicator.java
-    │   └── UserFeedback.java
-    ├── status/
-    │   └── StatusBarPanel.java
-    └── ConnectionDialog.java
+├── MainApp.java                          # 应用入口
+├── config/                               # 配置层
+│   ├── AppConfig.java                    # 全局配置单例
+│   ├── SavedConnection.java              # 连接信息 DTO
+│   ├── PasswordCipher.java               # AES-256-GCM 密码加密
+│   └── ConnectionImportExport.java       # 连接导入/导出
+├── db/                                   # 数据库方言层
+│   ├── DbType.java                       # 数据库类型枚举
+│   ├── Dialect.java                      # 方言接口（13 方法）
+│   ├── DialectFactory.java               # 方言工厂
+│   ├── MySQLDialect.java                 # MySQL 方言实现
+│   └── PostgreSQLDialect.java            # PostgreSQL 方言实现
+├── jdbc/                                 # JDBC 操作层
+│   ├── ConnectionManager.java            # HikariCP 连接池管理器
+│   ├── JdbcExecutor.java                 # SQL 执行器
+│   ├── SqlBuilder.java                   # 安全 SQL 构建
+│   └── JdbcRowWriter.java                # 事务性 DML 写入器
+├── service/                              # 服务层
+│   ├── QueryService.java                 # SQL 查询服务
+│   ├── TableDataService.java             # 表数据加载服务
+│   └── TransactionService.java           # 事务管理
+├── metadata/                             # 元数据层
+│   ├── MetadataService.java              # 元数据外观服务
+│   ├── ColumnInfo.java                   # 列元数据模型
+│   └── TableMeta.java                    # 表元数据模型
+├── model/                                # 数据模型
+│   ├── DbConfig.java                     # 连接配置模型
+│   └── SqlParameter.java                 # SQL 参数模型
+├── i18n/                                 # 国际化
+│   └── I18nManager.java                  # 国际化管理器
+├── util/                                 # 工具类
+│   ├── FontManager.java                  # 字体管理
+│   ├── ThemeManager.java                 # 主题管理
+│   ├── ErrorHandler.java                 # 错误处理
+│   └── SwingUtil.java                    # Swing 辅助
+└── ui/                                   # UI 层
+    ├── frame/                            # 主窗口与设置窗口
+    │   ├── MainFrame.java                # 主窗口
+    │   └── SettingsDialog.java           # 设置对话框
+    ├── workspace/                        # 工作区与标签页管理
+    │   ├── WorkspaceTabs.java            # 标签页容器
+    │   ├── TabManager.java               # 标签页管理器
+    │   └── tab/                          # 各类功能标签页
+    │       ├── AbstractTab.java          # 标签页抽象基类
+    │       ├── TableDataTab.java         # 表数据浏览/编辑页
+    │       ├── QueryTab.java             # SQL 查询页
+    │       ├── DesignTableTab.java       # 表结构设计页
+    │       └── ObjectListTab.java        # 对象列表页
+    ├── explorer/                         # 左侧对象树浏览器
+    │   ├── ObjectExplorerPanel.java      # 对象树主面板
+    │   ├── ExplorerTreeNode.java         # 树节点模型
+    │   ├── ExplorerNodeType.java         # 节点类型枚举
+    │   ├── ExplorerTreeCellRenderer.java # 节点渲染器
+    │   └── ExplorerPopupMenuFactory.java # 右键菜单工厂
+    ├── table/                            # 表格显示与编辑组件
+    │   ├── DataGridPanel.java            # 数据网格面板
+    │   ├── DataToolbar.java              # 表数据工具栏
+    │   ├── EditableResultTableModel.java # 可编辑结果表模型
+    │   ├── PagedResultTableModel.java    # 分页结果表模型
+    │   ├── RowChange.java / ChangeType.java # 行变更记录与变更类型
+    │   ├── TypedCellEditor.java          # 类型感知单元格编辑器
+    │   └── RowStateRenderer.java         # 行状态渲染器
+    ├── sql/                              # SQL 编辑/执行相关组件
+    │   ├── SqlEditorPanel.java           # SQL 编辑器面板
+    │   ├── SqlResultPanel.java           # SQL 结果展示面板
+    │   └── SqlToolbar.java               # SQL 工具栏
+    ├── common/                           # 通用 UI 组件与常量
+    │   ├── UiConstants.java              # UI 常量（颜色/尺寸/间距）
+    │   ├── ConfirmDialog.java            # 通用确认对话框
+    │   ├── MenuBuilder.java              # 菜单构建工具
+    │   ├── ToolbarIconFactory.java       # 工具栏图标工厂
+    │   ├── LoadingIndicator.java         # 加载指示器组件
+    │   └── UserFeedback.java             # 用户反馈提示封装
+    ├── status/                           # 状态栏组件
+    │   └── StatusBarPanel.java           # 底部状态栏
+    └── ConnectionDialog.java             # 数据库连接对话框
 ```
