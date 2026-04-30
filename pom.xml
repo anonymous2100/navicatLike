@@ -192,7 +192,6 @@
                                 </transformer>
                                 <transformer implementation="org.apache.maven.plugins.shade.resource.ServicesResourceTransformer"/>
                             </transformers>
-                            <createDependencyReducedPom>true</createDependencyReducedPom>
                         </configuration>
                     </execution>
                 </executions>
