@@ -5,12 +5,45 @@
 #include <QThread>
 #include <stdexcept>
 
+static QStringList mysqlOdbcDriverNames()
+{
+    // Try known driver names, newest first (ODBC driver name includes version)
+    return {
+        "MySQL ODBC 9.7 Unicode Driver",
+        "MySQL ODBC 9.7 ANSI Driver",
+        "MySQL ODBC 9.6 Unicode Driver",
+        "MySQL ODBC 9.6 ANSI Driver",
+        "MySQL ODBC 9.5 Unicode Driver",
+        "MySQL ODBC 9.5 ANSI Driver",
+        "MySQL ODBC 9.4 Unicode Driver",
+        "MySQL ODBC 9.4 ANSI Driver",
+        "MySQL ODBC 9.3 Unicode Driver",
+        "MySQL ODBC 9.3 ANSI Driver",
+        "MySQL ODBC 9.2 Unicode Driver",
+        "MySQL ODBC 9.2 ANSI Driver",
+        "MySQL ODBC 9.1 Unicode Driver",
+        "MySQL ODBC 9.1 ANSI Driver",
+        "MySQL ODBC 9.0 Unicode Driver",
+        "MySQL ODBC 9.0 ANSI Driver",
+        "MySQL ODBC 8.4 Unicode Driver",
+        "MySQL ODBC 8.4 ANSI Driver",
+        "MySQL ODBC 8.3 Unicode Driver",
+        "MySQL ODBC 8.3 ANSI Driver",
+        "MySQL ODBC 8.2 Unicode Driver",
+        "MySQL ODBC 8.2 ANSI Driver",
+        "MySQL ODBC 8.1 Unicode Driver",
+        "MySQL ODBC 8.1 ANSI Driver",
+        "MySQL ODBC 8.0 Unicode Driver",
+        "MySQL ODBC 8.0 ANSI Driver",
+    };
+}
+
 ConnectionPool::ConnectionPool(QObject* parent)
     : QObject(parent)
 {
     m_healthTimer = new QTimer(this);
     QObject::connect(m_healthTimer, &QTimer::timeout, this, &ConnectionPool::performHealthCheck);
-    m_healthTimer->start(60000); // every 1 minute
+    m_healthTimer->start(60000);
 }
 
 ConnectionPool::~ConnectionPool()
@@ -43,22 +76,51 @@ void ConnectionPool::connect(const QString& host, int port, const QString& datab
 
     QString connName = QString("ldb_%1").arg(m_poolEntries.size());
     {
-        QSqlDatabase db = QSqlDatabase::addDatabase(
-            dbType == DbType::MYSQL ? "QMYSQL" : "QPSQL", connName);
-        db.setHostName(host);
-        db.setPort(port);
-        db.setDatabaseName(database);
-        db.setUserName(user);
-        db.setPassword(password);
+        if (dbType == DbType::MYSQL) {
+            // MySQL via ODBC bridge (QMYSQL driver not included in Qt6 by default)
+            QString lastError;
+            bool connected = false;
 
-        if (!db.open()) {
-            QSqlDatabase::removeDatabase(connName);
-            throw std::runtime_error(
-                QString("Failed to connect: %1").arg(db.lastError().text()).toStdString());
+            for (const auto& driverName : mysqlOdbcDriverNames()) {
+                QString connStr = QString("DRIVER={%1};SERVER=%2;PORT=%3;DATABASE=%4;UID=%5;PWD=%6;OPTION=3;")
+                                      .arg(driverName, host)
+                                      .arg(port)
+                                      .arg(database, user, password);
+                {
+                    QSqlDatabase db = QSqlDatabase::addDatabase("QODBC", connName);
+                    db.setDatabaseName(connStr);
+                    db.setConnectOptions("SQL_ATTR_LOGIN_TIMEOUT=5;SQL_ATTR_CONNECTION_TIMEOUT=5;");
+                    if (db.open()) {
+                        connected = true;
+                        break;
+                    }
+                    lastError = db.lastError().text();
+                    db.close();
+                } // db destroyed here before removeDatabase
+                QSqlDatabase::removeDatabase(connName);
+            }
+
+            if (!connected) {
+                throw std::runtime_error(
+                    QString("Failed to connect MySQL via ODBC: %1\n\n"
+                            "Please install MySQL ODBC Connector from:\n"
+                            "https://dev.mysql.com/downloads/connector/odbc/")
+                        .arg(lastError).toStdString());
+            }
+        } else {
+            QSqlDatabase db = QSqlDatabase::addDatabase("QPSQL", connName);
+            db.setHostName(host);
+            db.setPort(port);
+            db.setDatabaseName(database);
+            db.setUserName(user);
+            db.setPassword(password);
+
+            if (!db.open()) {
+                QSqlDatabase::removeDatabase(connName);
+                throw std::runtime_error(
+                    QString("Failed to connect: %1").arg(db.lastError().text()).toStdString());
+            }
         }
-
-        // Disable auto-commit for transaction support
-        db.transaction();
     }
 
     PoolEntry entry;
@@ -66,6 +128,7 @@ void ConnectionPool::connect(const QString& host, int port, const QString& datab
     entry.creds.jdbcUrl = jdbcUrl;
     entry.creds.user = user;
     entry.creds.password = password;
+    entry.isOdbc = (dbType == DbType::MYSQL);
     m_poolEntries.insert(key, entry);
 
     m_currentKey = key;
@@ -89,64 +152,65 @@ void ConnectionPool::switchDatabase(const QString& dbName)
     QString oldKey = m_currentKey;
     QString oldDbName = m_currentDbName;
 
-    QSqlDatabase db = QSqlDatabase::database(m_poolEntries.value(m_currentKey).connectionName);
-    QString driverName = db.driverName().toLower();
+    auto& entry = m_poolEntries[m_currentKey];
 
-    if (driverName == "qmysql") {
-        // MySQL: set current database via USE
+    if (entry.isOdbc) {
+        // ODBC-based MySQL: use USE statement to switch database
+        QSqlDatabase db = QSqlDatabase::database(entry.connectionName);
         QSqlQuery query(db);
         if (!query.exec(QString("USE `%1`").arg(dbName))) {
             throw std::runtime_error(query.lastError().text().toStdString());
         }
         m_currentDbName = dbName;
         m_databaseSelected = true;
-        qCInfo(lcLightDB) << "MySQL switched to database:" << dbName;
-    } else {
-        // PostgreSQL: create new connection pool for the target database
-        ConnectionCredentials creds = m_poolEntries.value(m_currentKey).creds;
-        QString rootKey = m_derivedRoots.value(m_currentKey, m_currentKey);
-        QString newUrl = buildUrlWithDatabase(creds.jdbcUrl, dbName);
-        QString newKey = buildConnectionKey(newUrl, creds.user);
+        qCInfo(lcLightDB) << "MySQL (ODBC) switched to database:" << dbName;
+        return;
+    }
 
-        if (!m_poolEntries.contains(newKey)) {
-            QString newConnName = QString("ldb_%1").arg(m_poolEntries.size());
-            {
-                QSqlDatabase newDb = QSqlDatabase::addDatabase(
-                    driverName == "qmysql" ? "QMYSQL" : "QPSQL", newConnName);
-                newDb.setHostName(db.hostName());
-                newDb.setPort(db.port());
-                newDb.setDatabaseName(dbName);
-                newDb.setUserName(creds.user);
-                newDb.setPassword(creds.password);
+    // PostgreSQL: create new connection pool for the target database
+    QSqlDatabase db = QSqlDatabase::database(entry.connectionName);
+    ConnectionCredentials creds = entry.creds;
+    QString rootKey = m_derivedRoots.value(m_currentKey, m_currentKey);
+    QString newUrl = buildUrlWithDatabase(creds.jdbcUrl, dbName);
+    QString newKey = buildConnectionKey(newUrl, creds.user);
 
-                if (!newDb.open()) {
-                    QSqlDatabase::removeDatabase(newConnName);
-                    // Rollback on failure
-                    m_currentKey = oldKey;
-                    m_currentDbName = oldDbName;
-                    throw std::runtime_error(
-                        QString("Failed to switch to database %1: %2")
-                            .arg(dbName, newDb.lastError().text()).toStdString());
-                }
+    if (!m_poolEntries.contains(newKey)) {
+        QString newConnName = QString("ldb_%1").arg(m_poolEntries.size());
+        {
+            QSqlDatabase newDb = QSqlDatabase::addDatabase("QPSQL", newConnName);
+            newDb.setHostName(db.hostName());
+            newDb.setPort(db.port());
+            newDb.setDatabaseName(dbName);
+            newDb.setUserName(creds.user);
+            newDb.setPassword(creds.password);
+
+            if (!newDb.open()) {
+                QSqlDatabase::removeDatabase(newConnName);
+                m_currentKey = oldKey;
+                m_currentDbName = oldDbName;
+                throw std::runtime_error(
+                    QString("Failed to switch to database %1: %2")
+                        .arg(dbName, newDb.lastError().text()).toStdString());
             }
-
-            PoolEntry entry;
-            entry.connectionName = newConnName;
-            entry.creds.jdbcUrl = newUrl;
-            entry.creds.user = creds.user;
-            entry.creds.password = creds.password;
-            entry.isDerived = true;
-            m_poolEntries.insert(newKey, entry);
-            m_derivedRoots.insert(newKey, rootKey);
-
-            qCInfo(lcLightDB) << "PostgreSQL created new connection pool for database:" << dbName;
         }
 
-        m_currentKey = newKey;
-        m_currentDbName = dbName;
-        m_databaseSelected = true;
-        qCInfo(lcLightDB) << "PostgreSQL switched to database:" << dbName;
+        PoolEntry newEntry;
+        newEntry.connectionName = newConnName;
+        newEntry.creds.jdbcUrl = newUrl;
+        newEntry.creds.user = creds.user;
+        newEntry.creds.password = creds.password;
+        newEntry.isDerived = true;
+        newEntry.isOdbc = false;
+        m_poolEntries.insert(newKey, newEntry);
+        m_derivedRoots.insert(newKey, rootKey);
+
+        qCInfo(lcLightDB) << "PostgreSQL created new connection pool for database:" << dbName;
     }
+
+    m_currentKey = newKey;
+    m_currentDbName = dbName;
+    m_databaseSelected = true;
+    qCInfo(lcLightDB) << "PostgreSQL switched to database:" << dbName;
 }
 
 QSqlDatabase ConnectionPool::getConnection()
@@ -187,7 +251,7 @@ QString ConnectionPool::databaseProductName()
 {
     QSqlDatabase db = getConnection();
     QString driver = db.driverName().toLower();
-    if (driver == "qmysql") return "MySQL";
+    if (driver == "qmysql" || driver == "qodbc") return "MySQL";
     if (driver == "qpsql") return "PostgreSQL";
     return db.driverName();
 }

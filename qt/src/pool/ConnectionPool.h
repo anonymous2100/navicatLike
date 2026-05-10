@@ -65,6 +65,7 @@ private:
         QString connectionName;
         ConnectionCredentials creds;
         bool isDerived = false;
+        bool isOdbc = false;
     };
     QHash<QString, PoolEntry> m_poolEntries;
     QHash<QString, QString> m_derivedRoots; // derivedKey -> rootKey

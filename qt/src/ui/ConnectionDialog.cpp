@@ -53,8 +53,8 @@ ConnectionDialog::ConnectionDialog(QWidget* parent)
     formLayout->addRow(tr("Name:"), m_nameField);
 
     m_typeCombo = new QComboBox(formGroup);
-    m_typeCombo->addItem("PostgreSQL", "POSTGRESQL");
     m_typeCombo->addItem("MySQL", "MYSQL");
+    m_typeCombo->addItem("PostgreSQL", "POSTGRESQL");
     formLayout->addRow(tr("Type:"), m_typeCombo);
 
     m_hostField = new QLineEdit("localhost", formGroup);
