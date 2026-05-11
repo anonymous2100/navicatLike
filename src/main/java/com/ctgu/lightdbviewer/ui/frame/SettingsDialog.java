@@ -1,5 +1,6 @@
 package com.ctgu.lightdbviewer.ui.frame;
 
+import com.ctgu.lightdbviewer.ai.AiService;
 import com.ctgu.lightdbviewer.config.AppConfig;
 import com.ctgu.lightdbviewer.util.FontManager;
 import com.ctgu.lightdbviewer.util.ThemeManager;
@@ -319,9 +320,25 @@ public class SettingsDialog extends JDialog
   // AI 面板
   // ================================================================
 
-  private JTextField aiModelName;
+  private JComboBox<String> aiModelName;
   private JTextField aiEndpoint;
   private JTextField aiApiKey;
+  private JCheckBox aiEnabled;
+  private JSpinner aiMaxTokens;
+  private JSpinner aiTimeout;
+  private JLabel aiTestResult;
+
+  /** 预设模型 → 默认 API 地址映射 */
+  private static final java.util.Map<String, String> MODEL_ENDPOINT_MAP = new java.util.LinkedHashMap<>();
+  static
+  {
+    MODEL_ENDPOINT_MAP.put("deepseek-chat", "https://api.deepseek.com/v1");
+    MODEL_ENDPOINT_MAP.put("deepseek-reasoner", "https://api.deepseek.com/v1");
+    MODEL_ENDPOINT_MAP.put("gpt-4o", "https://api.openai.com/v1");
+    MODEL_ENDPOINT_MAP.put("gpt-4o-mini", "https://api.openai.com/v1");
+    MODEL_ENDPOINT_MAP.put("claude-3.5-sonnet", "https://api.anthropic.com");
+    MODEL_ENDPOINT_MAP.put("自定义", "");
+  }
 
   private JPanel createAiPanel()
   {
@@ -331,26 +348,103 @@ public class SettingsDialog extends JDialog
     int row = 0;
     gbc.gridx = 0;
     gbc.gridy = row;
-    p.add(new JLabel("大模型名称："), gbc);
+    p.add(new JLabel("启用："), gbc);
     gbc.gridx = 1;
-    aiModelName = new JTextField(readProp("ai.model.name", ""), 24);
+    aiEnabled = new JCheckBox("启用 AI 助手");
+    aiEnabled.setSelected("true".equals(readProp("ai.enabled", "true")));
+    p.add(aiEnabled, gbc);
+    row++;
+
+    gbc.gridx = 0;
+    gbc.gridy = row;
+    p.add(new JLabel("大模型："), gbc);
+    gbc.gridx = 1;
+    String savedModel = readProp("ai.model", "deepseek-chat");
+    aiModelName = new JComboBox<>();
+    boolean foundInPreset = false;
+    for(String preset : MODEL_ENDPOINT_MAP.keySet())
+    {
+      aiModelName.addItem(preset);
+      if(preset.equals(savedModel))
+      {
+        foundInPreset = true;
+      }
+    }
+    if(!foundInPreset && !savedModel.isBlank())
+    {
+      aiModelName.addItem(savedModel);
+    }
+    aiModelName.setSelectedItem(savedModel);
+    aiModelName.setEditable(true);
+    aiModelName.addActionListener(e -> {
+      String selected = (String)aiModelName.getSelectedItem();
+      if(selected != null && MODEL_ENDPOINT_MAP.containsKey(selected))
+      {
+        aiEndpoint.setText(MODEL_ENDPOINT_MAP.get(selected));
+      }
+    });
     p.add(aiModelName, gbc);
     row++;
 
     gbc.gridx = 0;
     gbc.gridy = row;
-    p.add(new JLabel("链接地址"), gbc);
+    p.add(new JLabel("API 地址："), gbc);
     gbc.gridx = 1;
-    aiEndpoint = new JTextField(readProp("ai.endpoint", ""), 24);
+    aiEndpoint = new JTextField(readProp("ai.endpoint", "https://api.deepseek.com/v1"), 30);
     p.add(aiEndpoint, gbc);
     row++;
 
     gbc.gridx = 0;
     gbc.gridy = row;
-    p.add(new JLabel("API Key"), gbc);
+    p.add(new JLabel("API Key："), gbc);
     gbc.gridx = 1;
-    aiApiKey = new JTextField(readProp("ai.api.key", ""), 24);
+    aiApiKey = new JTextField(readProp("ai.api.key", ""), 30);
     p.add(aiApiKey, gbc);
+    row++;
+
+    gbc.gridx = 0;
+    gbc.gridy = row;
+    p.add(new JLabel("最大 Token："), gbc);
+    gbc.gridx = 1;
+    aiMaxTokens = new JSpinner(new SpinnerNumberModel(
+        Integer.parseInt(readProp("ai.max.tokens", "2048")), 256, 32768, 256));
+    p.add(aiMaxTokens, gbc);
+    row++;
+
+    gbc.gridx = 0;
+    gbc.gridy = row;
+    p.add(new JLabel("超时（秒）："), gbc);
+    gbc.gridx = 1;
+    aiTimeout = new JSpinner(new SpinnerNumberModel(
+        Integer.parseInt(readProp("ai.timeout", "30")), 5, 300, 5));
+    p.add(aiTimeout, gbc);
+    row++;
+
+    // 测试连接按钮
+    gbc.gridx = 0;
+    gbc.gridy = row;
+    gbc.gridwidth = 1;
+    gbc.anchor = GridBagConstraints.NORTHEAST;
+    p.add(new JLabel(""), gbc);
+    gbc.gridx = 1;
+    gbc.anchor = GridBagConstraints.WEST;
+    JButton testBtn = new JButton("测试连接");
+    testBtn.addActionListener(e -> testAiConnection());
+    p.add(testBtn, gbc);
+    row++;
+
+    // 测试结果展示
+    gbc.gridx = 0;
+    gbc.gridy = row;
+    gbc.gridwidth = 2;
+    gbc.anchor = GridBagConstraints.WEST;
+    gbc.fill = GridBagConstraints.HORIZONTAL;
+    gbc.weightx = 1;
+    aiTestResult = new JLabel(" ");
+    aiTestResult.setFont(aiTestResult.getFont().deriveFont(Font.PLAIN, 12));
+    p.add(aiTestResult, gbc);
+    gbc.weightx = 0;
+    gbc.fill = GridBagConstraints.NONE;
     row++;
 
     // 填充
@@ -358,9 +452,139 @@ public class SettingsDialog extends JDialog
     gbc.gridy = row;
     gbc.weighty = 1;
     gbc.gridwidth = 2;
+    gbc.anchor = GridBagConstraints.CENTER;
     p.add(Box.createVerticalGlue(), gbc);
 
     return p;
+  }
+
+  private void testAiConnection()
+  {
+    aiTestResult.setForeground(Color.BLACK);
+    aiTestResult.setText("正在测试连接，请稍候...");
+    String apiKey = aiApiKey.getText().trim();
+    String endpoint = aiEndpoint.getText().trim();
+    String model = (String)aiModelName.getSelectedItem();
+    if(apiKey.isBlank())
+    {
+      aiTestResult.setForeground(Color.RED);
+      aiTestResult.setText("请先填写 API Key");
+      return;
+    }
+    if(model == null || model.isBlank())
+    {
+      aiTestResult.setForeground(Color.RED);
+      aiTestResult.setText("请选择大模型");
+      return;
+    }
+    new SwingWorker<String, Void>()
+    {
+      @Override
+      protected String doInBackground()
+      {
+        StringBuilder result = new StringBuilder();
+        try
+        {
+          java.net.http.HttpClient client = java.net.http.HttpClient.newBuilder()
+              .connectTimeout(java.time.Duration.ofSeconds(10))
+              .build();
+
+          // 通过 chat completions 发一条简单消息验证 API 可用性
+          String body = """
+              {"model":"%s","messages":[{"role":"user","content":"hi"}],"max_tokens":5}
+              """.formatted(model);
+          java.net.http.HttpRequest chatReq = java.net.http.HttpRequest.newBuilder()
+              .uri(java.net.URI.create(endpoint + "/chat/completions"))
+              .header("Authorization", "Bearer " + apiKey)
+              .header("Content-Type", "application/json")
+              .timeout(java.time.Duration.ofSeconds(15))
+              .POST(java.net.http.HttpRequest.BodyPublishers.ofString(body))
+              .build();
+          java.net.http.HttpResponse<String> chatResp = client.send(chatReq,
+              java.net.http.HttpResponse.BodyHandlers.ofString());
+
+          if(chatResp.statusCode() == 200)
+          {
+            result.append("[API 连接] 成功 — 模型 ").append(model).append(" 可用");
+          }
+          else if(chatResp.statusCode() == 401)
+          {
+            return "[API 连接] 失败 — API Key 无效（401 Unauthorized）";
+          }
+          else if(chatResp.statusCode() == 403)
+          {
+            return "[API 连接] 失败 — 无权限访问（403 Forbidden）";
+          }
+          else if(chatResp.statusCode() == 404)
+          {
+            return "[API 连接] 失败 — 接口不存在（404），请检查 API 地址和模型名";
+          }
+          else
+          {
+            result.append("[API 连接] 失败 — HTTP ").append(chatResp.statusCode()).append(": ")
+                .append(chatResp.body().length() > 200 ? chatResp.body().substring(0, 200) : chatResp.body());
+            return result.toString();
+          }
+
+          // 查询余额（DeepSeek 专有接口）
+          try
+          {
+            java.net.http.HttpRequest balanceReq = java.net.http.HttpRequest.newBuilder()
+                .uri(java.net.URI.create(endpoint + "/user/balance"))
+                .header("Authorization", "Bearer " + apiKey)
+                .timeout(java.time.Duration.ofSeconds(10))
+                .GET()
+                .build();
+            java.net.http.HttpResponse<String> balanceResp = client.send(balanceReq,
+                java.net.http.HttpResponse.BodyHandlers.ofString());
+            if(balanceResp.statusCode() == 200 && !balanceResp.body().isBlank())
+            {
+              result.append("\n[余额信息] ").append(balanceResp.body());
+            }
+          }
+          catch(Exception ignored)
+          {
+            // 非 DeepSeek 或接口不可用，忽略
+          }
+        }
+        catch(java.net.ConnectException e)
+        {
+          return "[网络错误] 无法连接到 " + endpoint + " — 请检查 API 地址和网络";
+        }
+        catch(java.net.http.HttpTimeoutException e)
+        {
+          return "[超时] 连接超时 — 请检查网络或 API 地址";
+        }
+        catch(Exception e)
+        {
+          return "[网络错误] " + e.getMessage();
+        }
+        return result.toString();
+      }
+
+      @Override
+      protected void done()
+      {
+        try
+        {
+          String msg = get();
+          if(msg.contains("失败") || msg.contains("错误") || msg.contains("超时"))
+          {
+            aiTestResult.setForeground(Color.RED);
+          }
+          else
+          {
+            aiTestResult.setForeground(new Color(0, 128, 0));
+          }
+          aiTestResult.setText("<html>" + msg.replace("\n", "<br>") + "</html>");
+        }
+        catch(Exception e)
+        {
+          aiTestResult.setForeground(Color.RED);
+          aiTestResult.setText("测试异常: " + e.getMessage());
+        }
+      }
+    }.execute();
   }
 
   // ================================================================
@@ -463,16 +687,21 @@ public class SettingsDialog extends JDialog
       FontManager.applyEditorFont(edFont, edSize);
     }
 
-    // AI 配置（写properties
-    writeProp("ai.model.name", aiModelName.getText());
+    // AI 配置
+    writeProp("ai.enabled", String.valueOf(aiEnabled.isSelected()));
+    writeProp("ai.model", (String)aiModelName.getSelectedItem());
     writeProp("ai.endpoint", aiEndpoint.getText());
     writeProp("ai.api.key", aiApiKey.getText());
+    writeProp("ai.max.tokens", aiMaxTokens.getValue().toString());
+    writeProp("ai.timeout", aiTimeout.getValue().toString());
 
     // 文件位置
     writeProp("file.config.path", configFilePath.getText());
     writeProp("file.log.path", logFilePath.getText());
 
     cfg.save();
+    // 重新初始化 AI 服务以应用新配置
+    AiService.getInstance().initFromAppConfig();
   }
 
   private String resolveThemeClassName(String displayName)

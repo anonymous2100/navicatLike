@@ -1,5 +1,6 @@
 package com.ctgu.lightdbviewer;
 
+import com.ctgu.lightdbviewer.ai.AiService;
 import com.ctgu.lightdbviewer.config.AppConfig;
 import com.ctgu.lightdbviewer.ui.frame.MainFrame;
 import com.ctgu.lightdbviewer.util.FontManager;
@@ -20,6 +21,8 @@ public class MainApp
   {
     // 1. 加载配置文件（在任何 UI 初始化之前）
     AppConfig.getInstance().load();
+    // 初始化 AI 服务（在 EDT 之外加载模型配置）
+    AiService.getInstance().initFromAppConfig();
 
     SwingUtilities.invokeLater(() -> {
       try

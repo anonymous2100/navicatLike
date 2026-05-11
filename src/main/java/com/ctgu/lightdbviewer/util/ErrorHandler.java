@@ -1,10 +1,13 @@
 package com.ctgu.lightdbviewer.util;
 
+import com.ctgu.lightdbviewer.ai.AiService;
+import com.ctgu.lightdbviewer.ui.ai.AiErrorDialog;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import javax.swing.*;
 import java.awt.Component;
+import java.awt.Frame;
 import java.sql.SQLException;
 
 /**
@@ -179,6 +182,33 @@ public final class ErrorHandler
   {
     logger.warn("显示警告: {}", message);
     JOptionPane.showMessageDialog(parent, message, title, JOptionPane.WARNING_MESSAGE);
+  }
+
+  /**
+   * 处理 SQL 执行错误 — 显示错误对话框并提供"AI 分析"按钮
+   *
+   * @param parentFrame  父窗口（用于 AI 对话框定位）
+   * @param sql          执行的 SQL
+   * @param errorMessage 错误消息
+   */
+  public static void handleSqlError(Frame parentFrame, String sql, String errorMessage)
+  {
+    logError(new SQLException(errorMessage), errorMessage);
+    if(AiService.getInstance().isAvailable())
+    {
+      Object[] options = { "确定", "AI 分析" };
+      int choice = JOptionPane.showOptionDialog(parentFrame, errorMessage, "SQL 执行错误",
+          JOptionPane.DEFAULT_OPTION, JOptionPane.ERROR_MESSAGE, null, options, options[0]);
+      if(choice == 1)
+      {
+        AiErrorDialog dlg = new AiErrorDialog(parentFrame, sql, errorMessage);
+        dlg.setVisible(true);
+      }
+    }
+    else
+    {
+      JOptionPane.showMessageDialog(parentFrame, errorMessage, "SQL 执行错误", JOptionPane.ERROR_MESSAGE);
+    }
   }
 
   /**

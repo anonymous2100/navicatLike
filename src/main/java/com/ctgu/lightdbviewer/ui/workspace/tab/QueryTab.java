@@ -6,6 +6,7 @@ import com.ctgu.lightdbviewer.ui.sql.SqlEditorPanel;
 import com.ctgu.lightdbviewer.ui.sql.SqlResultPanel;
 import com.ctgu.lightdbviewer.ui.sql.SqlToolbar;
 import com.ctgu.lightdbviewer.ui.status.StatusBarPanel;
+import com.ctgu.lightdbviewer.util.ErrorHandler;
 import com.ctgu.lightdbviewer.util.ThemeManager;
 
 import javax.swing.*;
@@ -48,6 +49,9 @@ public class QueryTab extends AbstractTab
     editorPanel = new SqlEditorPanel();
     resultPanel = new SqlResultPanel();
     toolbar = new SqlToolbar(this::runSql, this::stopSql, this::clearResults, this::onSave, this::onBeautifySql);
+    toolbar.setOnAskAi(editorPanel.getAiToggleBtn()::doClick);
+    toolbar.setOnExplain(this::runExplain);
+    toolbar.addAiToggleButton(editorPanel.getAiToggleBtn());
     JSplitPane split = new JSplitPane(JSplitPane.VERTICAL_SPLIT, editorPanel, resultPanel);
     split.setResizeWeight(0.45);
     split.setDividerLocation(260);
@@ -101,7 +105,6 @@ public class QueryTab extends AbstractTab
 
   private void executeSqlPage(String sql, boolean addToHistory)
   {
-
     toolbar.setExecuting(true);
     status.setMessage("正在执行 SQL...");
     status.clearElapsed();
@@ -158,6 +161,7 @@ public class QueryTab extends AbstractTab
           resultPanel.showError("执行失败", e);
           status.setMessage("执行失败: " + e.getMessage());
           status.clearElapsed();
+          ErrorHandler.handleSqlError((java.awt.Frame)SwingUtilities.getWindowAncestor(QueryTab.this), sql, e.getMessage());
         }
       }
     };
@@ -270,6 +274,29 @@ public class QueryTab extends AbstractTab
   private void runSql()
   {
     runCurrentSql();
+  }
+
+  private void runExplain()
+  {
+    if(currentWorker != null && !currentWorker.isDone())
+    {
+      status.setMessage("已有 SQL 正在执行中");
+      return;
+    }
+    String sql = editorPanel.getSelectedSqlOrAll().trim();
+    sql = normalizeSql(sql);
+    if(sql.isEmpty())
+    {
+      status.setMessage("SQL 为空");
+      return;
+    }
+    if(!sql.toUpperCase(Locale.ROOT).startsWith("EXPLAIN "))
+    {
+      sql = "EXPLAIN " + sql;
+    }
+    currentPage = 0;
+    lastPagedSql = sql;
+    executeSqlPage(sql, false);
   }
 
   private void stopSql()

@@ -16,9 +16,10 @@ import java.util.List;
  * <p>
  * 第一行：[保存] [美化SQL] [清空结果] [询问AI]
  * 第二行：[连接] [数据库] [Schema] | [运行] [停止] | [解释]
-  /**
-   * SqlToolbar — Navicat 风格双行工具
-/**
+ * /**
+ * SqlToolbar — Navicat 风格双行工具
+ * /**
+ *
  * @author lihuahui
  * @version 1.0
  * @description:
@@ -43,6 +44,8 @@ public class SqlToolbar extends JPanel
   private final JButton explainBtn = iconTextBtn(BtnIcon.EXPLAIN, "解释", "查看执行计划 (EXPLAIN)");
 
   private Runnable onContextChange;
+  private Runnable onAskAi;
+  private Runnable onExplain;
   private volatile boolean suppressDbListener;
 
   public SqlToolbar(Runnable onRun, Runnable onStop, Runnable onClear)
@@ -66,6 +69,16 @@ public class SqlToolbar extends JPanel
   public void setOnContextChange(Runnable r)
   {
     this.onContextChange = r;
+  }
+
+  public void setOnAskAi(Runnable r)
+  {
+    this.onAskAi = r;
+  }
+
+  public void setOnExplain(Runnable r)
+  {
+    this.onExplain = r;
   }
 
   private JPanel buildRow1(Runnable onSave, Runnable onBeautify, Runnable onClear)
@@ -119,7 +132,12 @@ public class SqlToolbar extends JPanel
     stopButton.setForeground(new Color(0xB71C1C));
     stopButton.setFont(stopButton.getFont().deriveFont(Font.BOLD));
     stopButton.addActionListener(e -> onStop.run());
-    explainBtn.addActionListener(e -> onRun.run());
+    explainBtn.addActionListener(e -> {
+      if(onExplain != null)
+      {
+        onExplain.run();
+      }
+    });
     row.add(connLabel);
     row.add(dbCombo);
     row.add(schemaCombo);
@@ -129,6 +147,20 @@ public class SqlToolbar extends JPanel
     row.add(sep());
     row.add(explainBtn);
     return row;
+  }
+
+  /**
+   * 将外部 AI 切换按钮添加在解释按钮之后
+   */
+  public void addAiToggleButton(AbstractButton btn)
+  {
+    if(getComponentCount() >= 2 && getComponent(1) instanceof JPanel row2)
+    {
+      btn.setFocusable(false);
+      btn.setMargin(new Insets(2, 8, 2, 8));
+      row2.add(btn);
+      row2.revalidate();
+    }
   }
 
   public void refreshConnectionContext()
@@ -290,7 +322,10 @@ public class SqlToolbar extends JPanel
 
   private void onAskAi()
   {
-    JOptionPane.showMessageDialog(this, "询问 AI 功能即将上线，请期待", "询问 AI", JOptionPane.INFORMATION_MESSAGE);
+    if(onAskAi != null)
+    {
+      onAskAi.run();
+    }
   }
 
   private void initShortcuts(Runnable onRun, Runnable onClear)

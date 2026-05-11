@@ -125,6 +125,17 @@
             <version>1.19.3</version>
             <scope>test</scope>
         </dependency>
+        <!-- LangChain4j AI 集成 -->
+        <dependency>
+            <groupId>dev.langchain4j</groupId>
+            <artifactId>langchain4j</artifactId>
+            <version>1.0.0-beta1</version>
+        </dependency>
+        <dependency>
+            <groupId>dev.langchain4j</groupId>
+            <artifactId>langchain4j-open-ai</artifactId>
+            <version>1.0.0-beta1</version>
+        </dependency>
     </dependencies>
 
 
