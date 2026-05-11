@@ -1,0 +1,25 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<launch4jConfig>
+    <headerType>gui</headerType>
+    <jar>target/navicatLike-0.0.1.jar</jar>
+    <outfile>dist-exe/LightDBViewer.exe</outfile>
+    <dontWrapJar>true</dontWrapJar>
+    <errTitle>LightDBViewer</errTitle>
+    <stayAlive>false</stayAlive>
+    <classPath>
+        <mainClass>com.ctgu.lightdbviewer.MainApp</mainClass>
+    </classPath>
+    <jre>
+        <path>runtime</path>
+        <bundledJreOnly>true</bundledJreOnly>
+        <minVersion>21</minVersion>
+    </jre>
+    <versionInfo>
+        <fileVersion>0.0.1.0</fileVersion>
+        <txtFileVersion>0.0.1</txtFileVersion>
+        <fileDescription>LightDBViewer - Lightweight Database Viewer</fileDescription>
+        <productName>LightDBViewer</productName>
+        <productVersion>0.0.1.0</productVersion>
+        <copyright>(c) 2025 LightDBViewer</copyright>
+    </versionInfo>
+</launch4jConfig>

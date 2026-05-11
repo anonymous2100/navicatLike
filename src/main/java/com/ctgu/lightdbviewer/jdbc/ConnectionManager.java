@@ -73,6 +73,23 @@ public final class ConnectionManager
 
   static
   {
+    // 显式加载 JDBC 驱动 — 确保 Launch4j 打包后（非标准 classloader）也能找到驱动
+    try
+    {
+      Class.forName("com.mysql.cj.jdbc.Driver");
+    }
+    catch(ClassNotFoundException ignored)
+    {
+      // MySQL driver not on classpath
+    }
+    try
+    {
+      Class.forName("org.postgresql.Driver");
+    }
+    catch(ClassNotFoundException ignored)
+    {
+      // PostgreSQL driver not on classpath
+    }
     // 启动健康检查
     healthCheckExecutor.scheduleAtFixedRate(ConnectionManager::performHealthCheck, 1, 1, TimeUnit.MINUTES);
   }
@@ -540,9 +557,10 @@ public final class ConnectionManager
     config.setJdbcUrl(jdbcUrl);
     config.setUsername(user);
     config.setPassword(password);
-    // MySQL 特定配置
+    // 显式指定驱动类名 — 避免 Launch4j 非标准 classloader 下 ServiceLoader 失效
     if(jdbcUrl.contains("mysql"))
     {
+      config.setDriverClassName("com.mysql.cj.jdbc.Driver");
       config.addDataSourceProperty("cachePrepStmts", "true");
       config.addDataSourceProperty("prepStmtCacheSize", "250");
       config.addDataSourceProperty("prepStmtCacheSqlLimit", "2048");
@@ -557,6 +575,7 @@ public final class ConnectionManager
     // PostgreSQL 特定配置
     if(jdbcUrl.contains("postgresql"))
     {
+      config.setDriverClassName("org.postgresql.Driver");
       config.addDataSourceProperty("preparedStatementCacheQueries", "256");
       config.addDataSourceProperty("preparedStatementCacheSizeMiB", "5");
       config.addDataSourceProperty("cachePrepStmts", "true");
