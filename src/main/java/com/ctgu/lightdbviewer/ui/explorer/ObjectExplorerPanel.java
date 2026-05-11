@@ -222,11 +222,22 @@ public class ObjectExplorerPanel extends JPanel
 
   public void refreshTree()
   {
+    // 保存当前展开的节点标识，reload 后恢复
+    java.util.Set<String> expandedPaths = collectExpandedPaths();
     root.removeAllChildren();
     root.setLoaded(false);
     if(!ConnectionManager.isConnected())
     {
-      ((DefaultTreeModel)tree.getModel()).reload();
+      if(lastStore != null)
+      {
+        root.setUserObject(lastStore.label());
+        root.setLoaded(true);
+      }
+      else
+      {
+        root.setUserObject("Not Connected");
+      }
+      model.reload();
       return;
     }
     // 连接标签：host:port (user)
@@ -236,8 +247,97 @@ public class ObjectExplorerPanel extends JPanel
     // 添加 Databases 文件夹（LOADING 占位符，触发懒加载）
     ExplorerTreeNode dbsFolder = makeFolder(ExplorerNodeType.DATABASES_FOLDER, "Databases", null, null, true);
     root.add(dbsFolder);
+    root.setLoaded(true); // 根节点已由 refreshTree 填充完毕，不再触发懒加载
     model.reload();
-    tree.expandRow(0); // 展开根节点，Databases 文件夹可
+    tree.expandRow(0); // 展开根节点
+    // 恢复之前展开的节点
+    restoreExpandedPaths(expandedPaths);
+  }
+
+  private java.util.Set<String> collectExpandedPaths()
+  {
+    java.util.Set<String> paths = new java.util.LinkedHashSet<>();
+    for(int i = 1; i < tree.getRowCount(); i++)
+    {
+      TreePath path = tree.getPathForRow(i);
+      if(path == null || !tree.isExpanded(i))
+      {
+        continue;
+      }
+      StringBuilder key = new StringBuilder();
+      for(int j = 1; j < path.getPathCount(); j++)
+      {
+        if(path.getPathComponent(j) instanceof ExplorerTreeNode node)
+        {
+          if(key.length() > 0)
+          {
+            key.append('/');
+          }
+          key.append(node.getType().name()).append(':').append(node.getLabel());
+        }
+      }
+      if(key.length() > 0)
+      {
+        paths.add(key.toString());
+      }
+    }
+    return paths;
+  }
+
+  private void restoreExpandedPaths(java.util.Set<String> saved)
+  {
+    if(saved.isEmpty())
+    {
+      return;
+    }
+    // 先加载 root 的子节点（DATABASES_FOLDER），再恢复
+    if(root.getChildCount() > 0 && root.getChildAt(0) instanceof ExplorerTreeNode dbsFolder)
+    {
+      if(dbsFolder.needsLoading())
+      {
+        loadAsync(dbsFolder, () -> doRestoreExpanded(saved, dbsFolder, 2));
+        return;
+      }
+      doRestoreExpanded(saved, dbsFolder, 2);
+    }
+  }
+
+  private void doRestoreExpanded(java.util.Set<String> saved, ExplorerTreeNode node, int depth)
+  {
+    for(String savedPath : saved)
+    {
+      String[] parts = savedPath.split("/");
+      if(parts.length > depth)
+      {
+        continue;
+      }
+      ExplorerTreeNode match = findNodeByPath(node, parts, 1);
+      if(match != null)
+      {
+        TreePath path = new TreePath(model.getPathToRoot(match));
+        tree.expandPath(path);
+      }
+    }
+  }
+
+  private ExplorerTreeNode findNodeByPath(ExplorerTreeNode parent, String[] parts, int index)
+  {
+    if(index >= parts.length)
+    {
+      return parent;
+    }
+    for(int i = 0; i < parent.getChildCount(); i++)
+    {
+      if(parent.getChildAt(i) instanceof ExplorerTreeNode child)
+      {
+        String childKey = child.getType().name() + ":" + child.getLabel();
+        if(parts[index].equals(childKey))
+        {
+          return findNodeByPath(child, parts, index + 1);
+        }
+      }
+    }
+    return null;
   }
 
   /**
@@ -498,6 +598,15 @@ public class ObjectExplorerPanel extends JPanel
         for(String t : MetadataService.listTriggers(node.getSchemaName()))
           result.add(leaf(ExplorerNodeType.TRIGGER, t, node.getDbName(), node.getSchemaName()));
       }
+      case CONNECTION ->
+      {
+        // CONNECTION 的子节点由 refreshTree() 管理，保留已有子节点不变
+        for(int i = 0; i < node.getChildCount(); i++)
+        {
+          if(node.getChildAt(i) instanceof ExplorerTreeNode child)
+            result.add(child);
+        }
+      }
       default ->
       {
         // 叶节点不应触发懒加载
@@ -675,6 +784,21 @@ public class ObjectExplorerPanel extends JPanel
       manager.openTable(qualifiedName(node));
     }
     case PROCEDURE, FUNCTION, TRIGGER -> manager.openQuery(sqlTemplateForNode(node));
+    case CONNECTION ->
+    {
+      if(!ConnectionManager.isConnected() && lastStore != null)
+      {
+        com.ctgu.lightdbviewer.model.DbConfig cfg = new com.ctgu.lightdbviewer.model.DbConfig();
+        cfg.name = lastStore.name();
+        cfg.type = lastStore.type();
+        cfg.host = lastStore.host();
+        cfg.port = lastStore.port();
+        cfg.database = lastStore.database();
+        cfg.username = lastStore.username();
+        cfg.password = lastStore.password();
+        manager.reconnect(cfg);
+      }
+    }
     default ->
     {
       // 文件夹节点由 TreeWillExpandListener 处理
@@ -713,8 +837,64 @@ public class ObjectExplorerPanel extends JPanel
       case PROCEDURE, FUNCTION, TRIGGER -> ExplorerPopupMenuFactory.createRoutineMenu(node.getType(), node.getLabel(), manager);
       case TABLES_FOLDER, VIEWS_FOLDER, PROCEDURES_FOLDER, FUNCTIONS_FOLDER, TRIGGERS_FOLDER ->
           ExplorerPopupMenuFactory.createTablesRootMenu(manager);
+      case CONNECTION -> buildConnectionPopupMenu();
+      case DATABASE -> ExplorerPopupMenuFactory.createDatabaseMenu(node.getLabel(), manager);
+      case SCHEMA -> ExplorerPopupMenuFactory.createConnectionMenu(manager);
+      case DATABASES_FOLDER -> ExplorerPopupMenuFactory.createConnectionMenu(manager);
       default -> ExplorerPopupMenuFactory.createConnectionMenu(manager);
     };
+  }
+
+  private JPopupMenu buildConnectionPopupMenu()
+  {
+    JPopupMenu menu = new JPopupMenu();
+    JMenuItem newQuery = new JMenuItem("新建查询");
+    newQuery.addActionListener(e -> manager.openQuery());
+    menu.add(newQuery);
+    menu.addSeparator();
+    JMenuItem closeConn = new JMenuItem("关闭连接");
+    closeConn.addActionListener(e -> closeCurrentConnection());
+    menu.add(closeConn);
+    menu.addSeparator();
+    JMenuItem refresh = new JMenuItem("刷新");
+    refresh.addActionListener(e -> manager.refresh());
+    menu.add(refresh);
+    return menu;
+  }
+
+  private Store lastStore;
+
+  private record Store(String label, String name, String host, int port, String database, String username, String password,
+      com.ctgu.lightdbviewer.db.DbType type)
+  {
+  }
+
+  /**
+   * 连接成功后由 MainFrame 调用，保存凭据以便后续关闭后双击重连
+   */
+  public void stashConnectionConfig(com.ctgu.lightdbviewer.model.DbConfig cfg)
+  {
+    String label = cfg.host + ":" + cfg.port + " (" + cfg.username + ")";
+    lastStore = new Store(label, cfg.name, cfg.host, cfg.port, cfg.database, cfg.username, cfg.password, cfg.type);
+  }
+
+  private void closeCurrentConnection()
+  {
+    // 关闭前更新 label（切换过数据库的话 label 可能已变化）
+    if(lastStore != null && ConnectionManager.isConnected())
+    {
+      try
+      {
+        String currentLabel = buildConnectionLabel();
+        lastStore = new Store(currentLabel, lastStore.name(), lastStore.host(), lastStore.port(),
+            lastStore.database(), lastStore.username(), lastStore.password(), lastStore.type());
+      }
+      catch(Exception ignored)
+      {
+      }
+    }
+    ConnectionManager.close();
+    refreshTree();
   }
 
   /**

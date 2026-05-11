@@ -28,26 +28,26 @@ public class ObjectListTab extends AbstractTab
   private final ObjectType objectType;
   private final StatusBarPanel statusBar;
   private final TabManager tabManager;
-   /**
-    * 目标数据库名，null 表示使用当前数据库
-    */
+  /**
+   * 目标数据库名，null 表示使用当前数据库
+   */
   private final String dbName;
   /**
    * 目标 Schema 名（PostgreSQL），null 表示默认
    */
   private final String schemaName;
 
-   /**
-    * 兼容旧调用：不指定 db/schema 上下文
-    */
+  /**
+   * 兼容旧调用：不指定 db/schema 上下文
+   */
   public ObjectListTab(ObjectType objectType, StatusBarPanel statusBar, TabManager tabManager)
   {
     this(objectType, statusBar, tabManager, null, null);
   }
 
   /**
-    * 带 db/schema 上下文的构造（用于"点击数据库节点"/"点击 Tables 文件"场景）
-    */
+   * 带 db/schema 上下文的构造（用于"点击数据库节点"/"点击 Tables 文件"场景）
+   */
   public ObjectListTab(ObjectType objectType, StatusBarPanel statusBar, TabManager tabManager, String dbName, String schemaName)
   {
     this.objectType = objectType;
@@ -77,7 +77,9 @@ public class ObjectListTab extends AbstractTab
       {
         // 如果指定了目标数据库，先切换
         if(dbName != null && !dbName.equals(ConnectionManager.getCurrentDatabase()))
+        {
           ConnectionManager.switchDatabase(dbName);
+        }
 
         DefaultTableModel model = new DefaultTableModel(objectType.headers, 0)
         {
@@ -93,34 +95,48 @@ public class ObjectListTab extends AbstractTab
         case DATABASES ->
         {
           for(String db : MetadataService.listDatabases())
+          {
             model.addRow(new Object[] { db });
+          }
         }
         case TABLES ->
         {
           for(String t : MetadataService.listTables(schemaName))
+          {
             model.addRow(new Object[] { t });
+          }
         }
         case VIEWS ->
         {
           for(String v : MetadataService.listViews(schemaName))
+          {
             model.addRow(new Object[] { v });
+          }
         }
         case FUNCTIONS ->
         {
           for(String f : MetadataService.listFunctions(schemaName))
+          {
             model.addRow(new Object[] { f });
+          }
         }
         case ROLES ->
         {
           for(String[] r : MetadataService.listRoles())
+          {
             model.addRow(r);
+          }
         }
         case OTHER ->
         {
           for(String p : MetadataService.listProcedures())
+          {
             model.addRow(new Object[] { "存储过程", p });
-           for(String t : MetadataService.listTriggers())
-             model.addRow(new Object[] { "触发器", t });
+          }
+          for(String t : MetadataService.listTriggers())
+          {
+            model.addRow(new Object[] { "触发器", t });
+          }
         }
         case QUERIES ->
         {
@@ -142,7 +158,9 @@ public class ObjectListTab extends AbstractTab
               try (var stmt = conn.createStatement(); var rs = stmt.executeQuery(sql))
               {
                 while(rs.next())
+                {
                   model.addRow(new Object[] { rs.getString(1), rs.getString(2), rs.getString(3) });
+                }
               }
             }
           }
@@ -153,8 +171,8 @@ public class ObjectListTab extends AbstractTab
         }
         case BACKUP ->
         {
-           model.addRow(new Object[] { "备份功能需配合 pg_dump / mysqldump 外部工具使用" });
-           model.addRow(new Object[] { "提示: 可在「查询」标签页中执行 COPY 命令进行数据导出" });
+          model.addRow(new Object[] { "备份功能需配合 pg_dump / mysqldump 外部工具使用" });
+          model.addRow(new Object[] { "提示: 可在「查询」标签页中执行 COPY 命令进行数据导出" });
         }
         }
         return model;
@@ -214,11 +232,15 @@ public class ObjectListTab extends AbstractTab
             });
           }
 
-           // 顶部信息
+          // 顶部信息
           String contextDb = dbName != null ? dbName : ConnectionManager.getCurrentDatabase();
           String contextLabel = schemaName != null ? contextDb + "." + schemaName : contextDb;
-           JPanel topPanel = new JPanel(new FlowLayout(FlowLayout.LEFT, 8, 4));
-           topPanel.add(new JLabel(objectType.label + " " + contextLabel + " (" + model.getRowCount() + " 条)"));
+          if(contextLabel == null || contextLabel.isBlank())
+          {
+            contextLabel = "(当前连接)";
+          }
+          JPanel topPanel = new JPanel(new FlowLayout(FlowLayout.LEFT, 8, 4));
+          topPanel.add(new JLabel(objectType.label + " " + contextLabel + " (" + model.getRowCount() + " 条)"));
           JButton refreshBtn = new JButton("刷新");
           refreshBtn.addActionListener(ev -> {
             removeAll();
@@ -232,7 +254,7 @@ public class ObjectListTab extends AbstractTab
           add(new JScrollPane(table), BorderLayout.CENTER);
           revalidate();
           repaint();
-           statusBar.setMessage("已加载 " + objectType.label + ": " + model.getRowCount() + " 条");
+          statusBar.setMessage("已加载 " + objectType.label + ": " + model.getRowCount() + " 条");
         }
         catch(Exception ex)
         {
@@ -263,7 +285,9 @@ public class ObjectListTab extends AbstractTab
       {
         Object val = m.getValueAt(row, col);
         if(val != null)
+        {
           width = Math.max(width, cellFm.stringWidth(val.toString()) + padding);
+        }
       }
       tc.setPreferredWidth(Math.min(width, maxWidth));
     }
@@ -276,14 +300,10 @@ public class ObjectListTab extends AbstractTab
    */
   public enum ObjectType
   {
-    DATABASES("数据库", new String[] { "名称" }),
-    TABLES("表", new String[] { "名称" }),
-    VIEWS("视图", new String[] { "名称" }),
-    FUNCTIONS("函数", new String[] { "名称" }),
-    ROLES("角色", new String[] { "名称", "超级用户", "可创建DB", "可登录" }),
-    OTHER("其他", new String[] { "类型", "名称" }),
-    QUERIES("查询", new String[] { "查询编号", "状态", "SQL" }),
-    BACKUP("备份", new String[] { "信息" });
+    DATABASES("数据库", new String[] { "名称" }), TABLES("表", new String[] { "名称" }), VIEWS("视图", new String[] { "名称" }), FUNCTIONS(
+      "函数", new String[] { "名称" }), ROLES("角色", new String[] { "名称", "超级用户", "可创建DB", "可登录" }), OTHER("其他",
+      new String[] { "类型", "名称" }), QUERIES("查询", new String[] { "查询编号", "状态", "SQL" }), BACKUP("备份",
+      new String[] { "信息" });
 
     public final String label;
     public final String[] headers;

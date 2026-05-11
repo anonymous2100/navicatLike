@@ -25,6 +25,8 @@ import java.awt.*;
 import java.awt.event.KeyEvent;
 import java.io.File;
 import java.sql.SQLException;
+import java.util.List;
+import java.util.ArrayList;
 
 /**
  * @author lihuahui
@@ -38,10 +40,13 @@ public class MainFrame extends JFrame
   private final StatusBarPanel statusBar = new StatusBarPanel();
   private final TabManager tabManager = new TabManager(workspace, statusBar);
   private final ObjectExplorerPanel explorer = new ObjectExplorerPanel(tabManager);
-  private final java.util.List<String> favorites = new java.util.ArrayList<>();
+  private final List<String> favorites = new ArrayList<>();
 
   public MainFrame()
   {
+    tabManager.setOpenConnectionAction(this::openConnectionDialog);
+    tabManager.setReconnectAction(this::connectTo);
+    tabManager.setRefreshTreeAction(explorer::refreshTree);
     setTitle("LightDB");
     setSize(1200, 800);
     setMinimumSize(new Dimension(960, 640));
@@ -69,7 +74,7 @@ public class MainFrame extends JFrame
     registerGlobalShortcuts();
     statusBar.setMessage("就绪");
     statusBar.setContext("未连接");
-        statusBar.clearElapsed();
+    statusBar.clearElapsed();
   }
 
   private JMenuBar createMenuBar()
@@ -425,6 +430,7 @@ public class MainFrame extends JFrame
       String label = (cfg.name != null && !cfg.name.isBlank()) ? cfg.name : cfg.host + ":" + cfg.port;
       statusBar.setContext(ConnectionManager.getDatabaseProduct() + " @ " + label + " / " + ctxDb);
       statusBar.setMessage("已连接 " + label);
+      explorer.stashConnectionConfig(cfg);
       explorer.refreshTree();
     }
     catch(SQLException ex)
@@ -466,6 +472,7 @@ public class MainFrame extends JFrame
       } String ctxDb = (actualDb != null && !actualDb.isBlank()) ? actualDb : "(全部数据库)";
       statusBar.setContext(ConnectionManager.getDatabaseProduct() + " @ " + label + " / " + ctxDb);
       statusBar.setMessage("自动连接: " + label);
+      explorer.stashConnectionConfig(cfg);
       explorer.refreshTree();
       // 自动展开树并打开第一张表
       SwingUtilities.invokeLater(() -> explorer.autoExpandAndOpen());

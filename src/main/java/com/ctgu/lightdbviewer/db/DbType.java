@@ -8,6 +8,6 @@ package com.ctgu.lightdbviewer.db;
  */
 public enum DbType
 {
-  POSTGRESQL, //
-  MYSQL
+  MYSQL, //默认使用mysql数据库
+  POSTGRESQL //
 }

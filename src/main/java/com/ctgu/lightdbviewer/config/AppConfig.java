@@ -72,7 +72,9 @@ public final class AppConfig
   {
     Path path = configFilePath();
     if(!Files.exists(path))
+    {
       return;
+    }
     try (Reader r = new InputStreamReader(Files.newInputStream(path), StandardCharsets.UTF_8))
     {
       props.load(r);

@@ -37,16 +37,10 @@ public class ConfirmDialog
    */
   public static boolean confirm(Component parent, String title, String message, Level level)
   {
-    int messageType = switch(level)
-    {
-      case INFO -> JOptionPane.INFORMATION_MESSAGE;
-      case WARNING -> JOptionPane.WARNING_MESSAGE;
-      case DANGER -> JOptionPane.ERROR_MESSAGE;
-    };
     Object[] options = new Object[] { "OK", "Cancel" };
     int result =
-        JOptionPane.showOptionDialog(parent, createMessagePanel(message, level), title, JOptionPane.OK_CANCEL_OPTION, messageType, null,
-            options, options[0]);
+        JOptionPane.showOptionDialog(parent, createMessagePanel(message, level), title, JOptionPane.OK_CANCEL_OPTION,
+            JOptionPane.PLAIN_MESSAGE, null, options, options[0]);
     return result == JOptionPane.OK_OPTION;
   }
 

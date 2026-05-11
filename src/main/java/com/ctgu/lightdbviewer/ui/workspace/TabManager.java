@@ -2,6 +2,7 @@ package com.ctgu.lightdbviewer.ui.workspace;
 
 
 import com.ctgu.lightdbviewer.jdbc.ConnectionManager;
+import com.ctgu.lightdbviewer.model.DbConfig;
 import com.ctgu.lightdbviewer.ui.status.StatusBarPanel;
 import com.ctgu.lightdbviewer.ui.workspace.tab.AbstractTab;
 import com.ctgu.lightdbviewer.ui.workspace.tab.DesignTableTab;
@@ -14,6 +15,7 @@ import java.sql.Statement;
 import java.util.HashMap;
 import java.util.Iterator;
 import java.util.Map;
+import java.util.function.Consumer;
 
 /**
  * @author lihuahui
@@ -26,11 +28,41 @@ public class TabManager
   private final StatusBarPanel status;
   private final Map<String, AbstractTab> opened = new HashMap<>();
   private int queryTabCounter = 1;
+  private Runnable openConnectionAction;
+  private Consumer<DbConfig> reconnectAction;
+  private Runnable refreshTreeAction;
 
   public TabManager(WorkspaceTabs tabs, StatusBarPanel status)
   {
     this.tabs = tabs;
     this.status = status;
+  }
+
+  public void setOpenConnectionAction(Runnable action)
+  {
+    this.openConnectionAction = action;
+  }
+
+  public void setReconnectAction(Consumer<DbConfig> action)
+  {
+    this.reconnectAction = action;
+  }
+
+  public void setRefreshTreeAction(Runnable action)
+  {
+    this.refreshTreeAction = action;
+  }
+
+  public void openConnectionDialog()
+  {
+    if(openConnectionAction != null)
+      openConnectionAction.run();
+  }
+
+  public void reconnect(DbConfig cfg)
+  {
+    if(reconnectAction != null)
+      reconnectAction.accept(cfg);
   }
 
   private String key(String type, String name)
@@ -200,6 +232,7 @@ public class TabManager
         }
       }
       status.setMessage("表已清空: " + table);
+      refresh();
     }
     catch(Exception e)
     {
@@ -207,8 +240,50 @@ public class TabManager
     }
   }
 
+  public void dropObject(String typeLabel, String sqlPrefix, String qualifiedName)
+  {
+    try
+    {
+      // 删除数据库前需要先切换到其他库，否则无法删除当前库
+      if("DROP DATABASE".equals(sqlPrefix))
+      {
+        try(Connection conn = ConnectionManager.get())
+        {
+          String product = conn.getMetaData().getDatabaseProductName().toLowerCase();
+          String safeDb = "postgres";
+          if(product.contains("mysql"))
+          {
+            safeDb = "mysql";
+          }
+          ConnectionManager.switchDatabase(safeDb);
+        }
+        catch(Exception e)
+        {
+          // 切换失败时继续尝试删除（MySQL 可能仍能成功）
+        }
+      }
+      try(Connection conn = ConnectionManager.get())
+      {
+        try(Statement stmt = conn.createStatement())
+        {
+          stmt.execute(sqlPrefix + " " + ConnectionManager.quoteIdentifier(conn, qualifiedName));
+        }
+      }
+      status.setMessage(typeLabel + " " + qualifiedName + " 已删除");
+      refresh();
+    }
+    catch(Exception e)
+    {
+      status.setMessage("删除失败: " + e.getMessage());
+    }
+  }
+
   public void refresh()
   {
+    if(refreshTreeAction != null)
+    {
+      refreshTreeAction.run();
+    }
     status.setMessage("已刷新");
   }
 

@@ -65,28 +65,45 @@
 
 ### 环境要求
 
-- JDK 21+
-- Maven 3.8+
-- MySQL 8.0+ 或 PostgreSQL 14+
+- **开发**：JDK 21+、Maven 3.8+
+- **运行 EXE**：无需安装任何 Java 环境（已捆绑精简 JRE）
 
-### 构建
+### 构建与运行
 
 ```bash
+# 构建 fat JAR
 mvn clean package -DskipTests
+
+# 直接运行（需要 JDK 21+）
+java -jar target/navicatLike-0.0.1.jar
 ```
 
-### 运行
+### 打包为独立 EXE（无需 JDK）
+
+使用 `build-exe.bat` 一键打包。该脚本会：
+
+1. `mvn clean package` → 生成 fat JAR
+2. `jlink` → 生成精简 JRE（包含桌面 GUI、JDBC、SSL/TLS 等必要模块）
+3. `launch4j:launch4j` → 将 JAR 嵌入 EXE，指向捆绑 JRE
 
 ```bash
-# 方法 1：通过 Maven 直接运行（需在 IDE 中配置 main class）
-# 或在命令行：
-mvn compile exec:java -Dexec.mainClass="com.ctgu.lightdbviewer.MainApp"
-
-# 方法 2：运行打包后的 JAR（需将所有依赖加入 classpath）
-java -cp target/lightDbViewer-0.0.1.jar:$(echo lib/*.jar | tr ' ' ':') com.ctgu.lightdbviewer.MainApp
+# 双击运行
+build-exe.bat
 ```
 
-启动后自动弹出连接对话框，填写数据库信息即可连接。
+输出目录 `dist-exe/`：
+
+```
+dist-exe/
+  LightDBViewer.exe           # 双击即可运行（内嵌 fat JAR）
+  runtime/                    # 精简版 JRE（无需用户安装 Java）
+  lightdbviewer.properties    # 配置文件
+  logs/                       # 日志目录
+```
+
+> **分发**：将 `dist-exe/` 整个文件夹打包为 ZIP 即可。用户解压后双击 `LightDBViewer.exe` 直接启动。
+
+> **技术说明**：`jlink` 模块列表来自 `jdeps` 分析结果 + 手动补充 `jdk.crypto.ec`（MySQL 8.x 默认 SSL 连接需要椭圆曲线加密）。代码中通过 `Class.forName()` 显式加载 JDBC 驱动，避免 Launch4j 非标准 classloader 导致 `ServiceLoader` 失效。
 
 ## 界面截图
 
