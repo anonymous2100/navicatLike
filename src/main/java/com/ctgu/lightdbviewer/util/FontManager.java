@@ -58,8 +58,9 @@ public final class FontManager
     while(keys.hasMoreElements())
     {
       Object key = keys.nextElement();
-      if(UIManager.get(key) instanceof FontUIResource)
+      if(UIManager.get(key) instanceof FontUIResource) {
         UIManager.put(key, fontResource);
+      }
     }
   }
 
@@ -109,8 +110,9 @@ public final class FontManager
       table.setFont(uiFont);
       table.setRowHeight(uiFont.getSize() + 6);
       JTableHeader header = table.getTableHeader();
-      if(header != null)
+      if(header != null) {
         header.setFont(uiFont.deriveFont(Font.BOLD));
+      }
     }
     else if(c instanceof JTree tree)
     {
@@ -122,50 +124,58 @@ public final class FontManager
     {
       // 其余普通组件
       Font cur = c.getFont();
-      if(cur == null || !isMonospace(cur))
+      if(cur == null || !isMonospace(cur)) {
         c.setFont(uiFont);
+      }
     }
 
     if(c instanceof Container container)
     {
-      for(Component child : container.getComponents())
+      for(Component child : container.getComponents()) {
         applyFontRecursive(child, uiFont, editorFont);
+      }
     }
   }
 
   public static Font resolveFont(String family, int style, int size)
   {
-    if(family != null && isFontAvailable(family))
+    if(family != null && isFontAvailable(family)) {
       return new Font(family, style, size);
+    }
     for(String fb : new String[] { "Segoe UI", "SansSerif", "Dialog" })
     {
-      if(isFontAvailable(fb))
+      if(isFontAvailable(fb)) {
         return new Font(fb, style, size);
+      }
     }
     return new Font(Font.SANS_SERIF, style, size);
   }
 
   private static Font resolveMonoFont(String preferred, int style, int size)
   {
-    if(preferred != null && isFontAvailable(preferred))
+    if(preferred != null && isFontAvailable(preferred)) {
       return new Font(preferred, style, size);
+    }
     for(String m : MONO_FAMILIES)
     {
-      if(isFontAvailable(m))
+      if(isFontAvailable(m)) {
         return new Font(m, style, size);
+      }
     }
     return new Font(Font.MONOSPACED, style, size);
   }
 
   private static boolean isMonospace(Font f)
   {
-    if(f == null)
+    if(f == null) {
       return false;
+    }
     String family = f.getFamily();
     for(String m : MONO_FAMILIES)
     {
-      if(m.equalsIgnoreCase(family))
+      if(m.equalsIgnoreCase(family)) {
         return true;
+      }
     }
     return false;
   }
@@ -174,8 +184,9 @@ public final class FontManager
   {
     for(String f : GraphicsEnvironment.getLocalGraphicsEnvironment().getAvailableFontFamilyNames())
     {
-      if(f.equalsIgnoreCase(name))
+      if(f.equalsIgnoreCase(name)) {
         return true;
+      }
     }
     return false;
   }

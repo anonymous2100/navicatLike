@@ -124,8 +124,9 @@ public final class ThemeManager
     // 刷新所有已打开窗口
     for(Window w : Window.getWindows())
     {
-      if(w.isDisplayable())
+      if(w.isDisplayable()) {
         SwingUtilities.updateComponentTreeUI(w);
+      }
     }
     // 再做递归 font + bgColor 精细覆盖
     FontManager.refreshAllWindows();
@@ -138,8 +139,9 @@ public final class ThemeManager
    */
   public static void applyBgColorToUiManager(Color color)
   {
-    if(color == null)
+    if(color == null) {
       return;
+    }
     ColorUIResource cr = new ColorUIResource(color);
     // 面板 & 滚动容器
     UIManager.put("Panel.background", cr);
@@ -171,12 +173,15 @@ public final class ThemeManager
 
   private static void applyBgColorToAllWindows(Color color)
   {
-    if(color == null)
+    if(color == null) {
       return;
+    }
+
     for(Window w : Window.getWindows())
     {
-      if(w.isDisplayable())
+      if(w.isDisplayable()) {
         applyBgColorRecursive(w, color);
+      }
     }
   }
 
@@ -196,8 +201,9 @@ public final class ThemeManager
     else if(c instanceof JScrollPane sp)
     {
       sp.setBackground(color);
-      if(sp.getViewport() != null)
+      if(sp.getViewport() != null) {
         sp.getViewport().setBackground(color);
+      }
     }
     else if(c instanceof JTable table)
     {
@@ -216,8 +222,9 @@ public final class ThemeManager
 
     if(c instanceof Container container)
     {
-      for(Component child : container.getComponents())
+      for(Component child : container.getComponents()) {
         applyBgColorRecursive(child, color);
+      }
     }
   }
 
@@ -250,8 +257,9 @@ public final class ThemeManager
   public static void applyBgColorToComponent(Component c)
   {
     Color color = parseBgColor(AppConfig.getInstance().getBgColorHex());
-    if(color != null)
+    if(color != null) {
       applyBgColorRecursive(c, color);
+    }
   }
 }
 

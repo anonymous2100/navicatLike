@@ -114,8 +114,9 @@ public class DataGridPanel extends JScrollPane
   private void copyRowAsInsertSql()
   {
     int modelRow = getSelectedRow();
-    if(modelRow < 0)
+    if(modelRow < 0) {
       return;
+    }
     TableModel m = table.getModel();
     int cols = m.getColumnCount();
 
@@ -123,15 +124,17 @@ public class DataGridPanel extends JScrollPane
     sb.append(quoteId(tableName)).append(" (");
     for(int i = 0; i < cols; i++)
     {
-      if(i > 0)
+      if(i > 0) {
         sb.append(", ");
+      }
       sb.append(quoteId(m.getColumnName(i)));
     }
     sb.append(")\nVALUES (");
     for(int i = 0; i < cols; i++)
     {
-      if(i > 0)
+      if(i > 0) {
         sb.append(", ");
+      }
       sb.append(SqlValueUtil.toSqlLiteral(m.getValueAt(modelRow, i)));
     }
     sb.append(");");
@@ -143,8 +146,9 @@ public class DataGridPanel extends JScrollPane
   private void copyRowAsUpdateSql()
   {
     int modelRow = getSelectedRow();
-    if(modelRow < 0)
+    if(modelRow < 0) {
       return;
+    }
     TableModel m = table.getModel();
     int cols = m.getColumnCount();
 
@@ -153,8 +157,9 @@ public class DataGridPanel extends JScrollPane
     sb.append(quoteId(tableName)).append(" SET\n");
     for(int i = 1; i < cols; i++)
     {
-      if(i > 1)
+      if(i > 1) {
         sb.append(",\n");
+      }
       sb.append("  ").append(quoteId(m.getColumnName(i))).append(" = ").append(SqlValueUtil.toSqlLiteral(m.getValueAt(modelRow, i)));
     }
     sb.append("\nWHERE ");
@@ -167,14 +172,16 @@ public class DataGridPanel extends JScrollPane
   private void copyRowData()
   {
     int modelRow = getSelectedRow();
-    if(modelRow < 0)
+    if(modelRow < 0) {
       return;
+    }
     TableModel m = table.getModel();
     StringBuilder sb = new StringBuilder();
     for(int i = 0; i < m.getColumnCount(); i++)
     {
-      if(i > 0)
+      if(i > 0) {
         sb.append('\t');
+      }
       Object val = m.getValueAt(modelRow, i);
       sb.append(val != null ? val : "");
     }
@@ -186,13 +193,15 @@ public class DataGridPanel extends JScrollPane
    */
   private String quoteId(String name)
   {
-    if(name == null || name.isBlank())
+    if(name == null || name.isBlank()) {
       return name;
+    }
     try
     {
       String product = ConnectionManager.getDatabaseProduct().toLowerCase();
-      if(product.contains("mysql"))
+      if(product.contains("mysql")) {
         return "`" + name.replace("`", "``") + "`";
+      }
     }
     catch(Exception ignored)
     {
@@ -221,8 +230,9 @@ public class DataGridPanel extends JScrollPane
     Set<Integer> indices = new HashSet<>();
     for(int i = 0; i < m.getColumnCount(); i++)
     {
-      if(pkColumns.contains(m.getColumnName(i)))
+      if(pkColumns.contains(m.getColumnName(i))) {
         indices.add(i);
+      }
     }
     rowStateRenderer.setPkColumnIndices(indices);
     table.repaint();

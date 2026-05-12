@@ -24,13 +24,16 @@ public final class SqlValueUtil
   //   */
   public static String toSqlLiteral(Object val)
   {
-    if(val == null)
+    if(val == null) {
       return "NULL";
-    if(val instanceof Number || val instanceof Boolean)
+    }
+    if(val instanceof Number || val instanceof Boolean) {
       return val.toString();
+    }
     String s = val.toString();
-    if(s.startsWith("<binary"))
+    if(s.startsWith("<binary")) {
       return "NULL /*binary*/";
+    }
     return "'" + s.replace("'", "''") + "'";
   }
 }

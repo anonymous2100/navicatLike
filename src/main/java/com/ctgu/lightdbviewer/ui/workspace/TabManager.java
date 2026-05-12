@@ -55,14 +55,16 @@ public class TabManager
 
   public void openConnectionDialog()
   {
-    if(openConnectionAction != null)
+    if(openConnectionAction != null) {
       openConnectionAction.run();
+    }
   }
 
   public void reconnect(DbConfig cfg)
   {
-    if(reconnectAction != null)
+    if(reconnectAction != null) {
       reconnectAction.accept(cfg);
+    }
   }
 
   private String key(String type, String name)
@@ -74,8 +76,9 @@ public class TabManager
   public String getActiveTableName()
   {
     AbstractTab tab = getCurrentTab();
-    if(tab instanceof TableDataTab tableTab)
+    if(tab instanceof TableDataTab tableTab) {
       return tableTab.getTableName();
+    }
     return null;
   }
 
@@ -300,13 +303,15 @@ public class TabManager
   public void closeOtherTabs()
   {
     int selected = tabs.getSelectedIndex();
-    if(selected < 0)
+    if(selected < 0) {
       return;
+    }
     java.awt.Component keepComp = tabs.getComponentAt(selected);
     for(int i = tabs.getTabCount() - 1; i >= 0; i--)
     {
-      if(tabs.getComponentAt(i) != keepComp)
+      if(tabs.getComponentAt(i) != keepComp) {
         tabs.removeTabAt(i);
+      }
     }
     cleanupClosedTableTabs();
   }

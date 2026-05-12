@@ -60,12 +60,13 @@ public class RowStateRenderer extends DefaultTableCellRenderer
     ChangeType state = tableModel.getRowState(modelRow);
     // ── 1. 确定行状态底──────────────────────────────────────
     Color stateColor = null;
-    if(state == ChangeType.INSERT)
+    if(state == ChangeType.INSERT) {
       stateColor = UiConstants.COLOR_ROW_INSERT;
-    else if(state == ChangeType.UPDATE)
+    } else if(state == ChangeType.UPDATE) {
       stateColor = UiConstants.COLOR_ROW_UPDATE;
-    else if(state == ChangeType.DELETE)
+    } else if(state == ChangeType.DELETE) {
       stateColor = UiConstants.COLOR_ROW_DELETE;
+    }
     // ── 2. 应用背景─────────────────────────────────────────
     if(isSelected)
     {
@@ -89,10 +90,12 @@ public class RowStateRenderer extends DefaultTableCellRenderer
     // ── 4. 字体：PK = 粗体；NULL = 斜体；两者叠────────────
     boolean isPk = pkColumnModelIndices.contains(modelCol);
     int fontStyle = Font.PLAIN;
-    if(isPk)
+    if(isPk) {
       fontStyle |= Font.BOLD;
-    if(isNull)
+    }
+    if(isNull) {
       fontStyle |= Font.ITALIC;
+    }
     if(fontStyle != Font.PLAIN)
     {
       setFont(table.getFont().deriveFont(fontStyle));

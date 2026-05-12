@@ -177,8 +177,9 @@ public final class PasswordCipher
           if(mac != null && mac.length > 0)
           {
             StringBuilder macStr = new StringBuilder();
-            for(byte b : mac)
+            for(byte b : mac) {
               macStr.append(String.format("%02X", b));
+            }
             key.append("|mac:").append(macStr);
             break; // 只使用第一个非回环网卡
           }

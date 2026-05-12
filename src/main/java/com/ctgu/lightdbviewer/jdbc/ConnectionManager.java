@@ -637,16 +637,19 @@ public final class ConnectionManager
   private static String extractDatabaseName(String jdbcUrl)
   {
     int slashSlash = jdbcUrl.indexOf("//");
-    if(slashSlash < 0)
+    if(slashSlash < 0) {
       return null;
+    }
     String afterHost = jdbcUrl.substring(slashSlash + 2); // "host:port/db"
     int slash = afterHost.indexOf('/');
-    if(slash < 0)
+    if(slash < 0) {
       return null;
+    }
     String db = afterHost.substring(slash + 1);
     int question = db.indexOf('?');
-    if(question >= 0)
+    if(question >= 0) {
       db = db.substring(0, question);
+    }
     return db.isEmpty() ? null : db;
   }
 

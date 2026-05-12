@@ -26,7 +26,9 @@ public class ExplorerTreeCellRenderer extends DefaultTreeCellRenderer
   {
     JLabel label = (JLabel)super.getTreeCellRendererComponent(tree, value, selected, expanded, leaf, row, hasFocus);
     if(value instanceof ExplorerTreeNode node)
+    {
       label.setIcon(ICON_CACHE.computeIfAbsent(node.getType(), ExplorerTreeCellRenderer::createIcon));
+    }
     return label;
   }
 
@@ -372,7 +374,9 @@ public class ExplorerTreeCellRenderer extends DefaultTreeCellRenderer
       // 内圆（空心）
       g2.setColor(g2.getBackground() != null ? UIManager.getColor("Tree.background") : Color.WHITE);
       if(g2.getColor() == null)
+      {
         g2.setColor(Color.WHITE);
+      }
       g2.fillOval(cx - 2, cy - 2, 5, 5);
       g2.dispose();
     }

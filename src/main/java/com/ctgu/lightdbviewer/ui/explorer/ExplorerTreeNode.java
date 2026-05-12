@@ -91,9 +91,13 @@ public class ExplorerTreeNode extends DefaultMutableTreeNode
   public boolean needsLoading()
   {
     if(loading || loaded)
+    {
       return false;
+    }
     if(getChildCount() != 1)
+    {
       return false;
+    }
     Object first = getChildAt(0);
     return first instanceof ExplorerTreeNode n && n.getType() == ExplorerNodeType.LOADING;
   }

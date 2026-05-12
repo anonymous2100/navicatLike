@@ -55,8 +55,9 @@ public class WorkspaceTabs extends JTabbedPane
   {
     for(int i = getTabCount() - 1; i >= 0; i--)
     {
-      if(getComponentAt(i) != keepTab)
+      if(getComponentAt(i) != keepTab) {
         removeTabAt(i);
+      }
     }
   }
 
@@ -65,8 +66,9 @@ public class WorkspaceTabs extends JTabbedPane
    */
   public void closeAllTabs()
   {
-    for(int i = getTabCount() - 1; i >= 0; i--)
+    for(int i = getTabCount() - 1; i >= 0; i--) {
       removeTabAt(i);
+    }
   }
 
   private JComponent createTabHeader(Component tabComponent)
@@ -106,24 +108,28 @@ public class WorkspaceTabs extends JTabbedPane
       private void selectTab()
       {
         int idx = indexOfComponent(tabComponent);
-        if(idx >= 0)
+        if(idx >= 0) {
           setSelectedIndex(idx);
+        }
       }
 
       @Override
       public void mousePressed(MouseEvent e)
       {
-        if(SwingUtilities.isLeftMouseButton(e))
+        if(SwingUtilities.isLeftMouseButton(e)) {
           selectTab();
-        if(e.isPopupTrigger())
+        }
+        if(e.isPopupTrigger()) {
           showTabPopup(e, tabComponent);
+        }
       }
 
       @Override
       public void mouseReleased(MouseEvent e)
       {
-        if(e.isPopupTrigger())
+        if(e.isPopupTrigger()) {
           showTabPopup(e, tabComponent);
+        }
       }
     };
 
@@ -137,16 +143,18 @@ public class WorkspaceTabs extends JTabbedPane
   {
     // 先选中被右键的标签
     int idx = indexOfComponent(tabComponent);
-    if(idx >= 0)
+    if(idx >= 0) {
       setSelectedIndex(idx);
+    }
 
     JPopupMenu popup = new JPopupMenu();
 
     JMenuItem closeCurrent = new JMenuItem("关闭当前标签页");
     closeCurrent.addActionListener(ev -> {
       int i = indexOfComponent(tabComponent);
-      if(i >= 0)
+      if(i >= 0) {
         removeTabAt(i);
+      }
     });
 
     JMenuItem closeOthers = new JMenuItem("关闭其他标签页");

@@ -226,17 +226,19 @@ public final class SqlBuilder
           break;
         case java.sql.Types.DECIMAL:
         case java.sql.Types.NUMERIC:
-          if(value instanceof Number n)
+          if(value instanceof Number n) {
             statement.setBigDecimal(index, new java.math.BigDecimal(n.toString()));
-          else
+          } else {
             statement.setObject(index, value);
+          }
           break;
         case java.sql.Types.BOOLEAN:
         case java.sql.Types.BIT:
-          if(value instanceof Boolean b)
+          if(value instanceof Boolean b) {
             statement.setBoolean(index, b);
-          else
+          } else {
             statement.setBoolean(index, Boolean.parseBoolean(value.toString()));
+          }
           break;
         case java.sql.Types.DATE:
         case java.sql.Types.TIME:

@@ -244,13 +244,15 @@ public class TableDataTab extends AbstractTab
 
   private void goToPage(int page)
   {
-    if(page < 0)
+    if(page < 0) {
       page = 0;
+    }
     if(totalRows > 0)
     {
       int maxPage = (totalRows - 1) / pageSize;
-      if(page > maxPage)
+      if(page > maxPage) {
         page = maxPage;
+      }
     }
     currentPage = page;
     loadCurrentPage();
@@ -258,8 +260,9 @@ public class TableDataTab extends AbstractTab
 
   private int getLastPage()
   {
-    if(totalRows <= 0)
+    if(totalRows <= 0) {
       return currentPage;
+    }
     return Math.max(0, (totalRows - 1) / pageSize);
   }
 
@@ -294,16 +297,18 @@ public class TableDataTab extends AbstractTab
   private void onDeleteRow()
   {
     int row = gridPanel.getSelectedRow();
-    if(row < 0)
+    if(row < 0) {
       return;
+    }
     model.markDeleteRow(row);
     markDirty();
   }
 
   private void onSave()
   {
-    if(!model.isDirty())
+    if(!model.isDirty()) {
       return;
+    }
     try
     {
       try (Connection conn = ConnectionManager.get())
@@ -340,8 +345,9 @@ public class TableDataTab extends AbstractTab
     if(model.isDirty())
     {
       int confirm = JOptionPane.showConfirmDialog(this, "有未保存的修改，刷新后将丢失，继续？", "刷新", JOptionPane.YES_NO_OPTION);
-      if(confirm != JOptionPane.YES_OPTION)
+      if(confirm != JOptionPane.YES_OPTION) {
         return;
+      }
     }
     totalRows = -1;
     loadCurrentPage();
@@ -366,11 +372,13 @@ public class TableDataTab extends AbstractTab
   private void updateTabTitle()
   {
     Container p = getParent();
-    if(!(p instanceof JTabbedPane tabs))
+    if(!(p instanceof JTabbedPane tabs)) {
       return;
+    }
     int idx = tabs.indexOfComponent(this);
-    if(idx >= 0)
+    if(idx >= 0) {
       tabs.setTitleAt(idx, tableName + (dirty ? " *" : ""));
+    }
   }
 
   @Override
@@ -391,10 +399,11 @@ public class TableDataTab extends AbstractTab
     int choice = JOptionPane.showOptionDialog(this, "选择导出格式（当前页共 " + model.getRowCount() + " 行）", "导出数据 - " + tableName,
         JOptionPane.DEFAULT_OPTION, JOptionPane.QUESTION_MESSAGE, null, options, options[0]);
 
-    if(choice == 0)
+    if(choice == 0) {
       exportCsv();
-    else if(choice == 1)
+    } else if(choice == 1) {
       exportSql();
+    }
   }
 
   private void exportCsv()
@@ -403,12 +412,14 @@ public class TableDataTab extends AbstractTab
     fc.setDialogTitle("导出 CSV");
     fc.setSelectedFile(new File(tableName + ".csv"));
     fc.setFileFilter(new FileNameExtensionFilter("CSV 文件 (*.csv)", "csv"));
-    if(fc.showSaveDialog(this) != JFileChooser.APPROVE_OPTION)
+    if(fc.showSaveDialog(this) != JFileChooser.APPROVE_OPTION) {
       return;
+    }
 
     File file = fc.getSelectedFile();
-    if(!file.getName().endsWith(".csv"))
+    if(!file.getName().endsWith(".csv")) {
       file = new File(file.getPath() + ".csv");
+    }
     File finalFile = file;
 
     new SwingWorker<Void, Void>()
@@ -424,8 +435,9 @@ public class TableDataTab extends AbstractTab
           // 表头
           for(int c = 0; c < cols; c++)
           {
-            if(c > 0)
+            if(c > 0) {
               bw.write(',');
+            }
             bw.write(csvEscape(model.getColumnName(c)));
           }
           bw.newLine();
@@ -434,8 +446,9 @@ public class TableDataTab extends AbstractTab
           {
             for(int c = 0; c < cols; c++)
             {
-              if(c > 0)
+              if(c > 0) {
                 bw.write(',');
+              }
               Object val = model.getValueAt(r, c);
               bw.write(csvEscape(val != null ? val.toString() : ""));
             }
@@ -469,12 +482,14 @@ public class TableDataTab extends AbstractTab
     fc.setDialogTitle("导出 SQL");
     fc.setSelectedFile(new File(tableName + ".sql"));
     fc.setFileFilter(new FileNameExtensionFilter("SQL 文件 (*.sql)", "sql"));
-    if(fc.showSaveDialog(this) != JFileChooser.APPROVE_OPTION)
+    if(fc.showSaveDialog(this) != JFileChooser.APPROVE_OPTION) {
       return;
+    }
 
     File file = fc.getSelectedFile();
-    if(!file.getName().endsWith(".sql"))
+    if(!file.getName().endsWith(".sql")) {
       file = new File(file.getPath() + ".sql");
+    }
     File finalFile = file;
 
     new SwingWorker<Void, Void>()
@@ -487,8 +502,9 @@ public class TableDataTab extends AbstractTab
         StringBuilder colPart = new StringBuilder();
         for(int c = 0; c < cols; c++)
         {
-          if(c > 0)
+          if(c > 0) {
             colPart.append(", ");
+          }
           colPart.append(quoteIdSql(model.getColumnName(c)));
         }
 
@@ -501,8 +517,9 @@ public class TableDataTab extends AbstractTab
             bw.write("INSERT INTO " + quoteIdSql(tableName) + " (" + colPart + ") VALUES (");
             for(int c = 0; c < cols; c++)
             {
-              if(c > 0)
+              if(c > 0) {
                 bw.write(", ");
+              }
               bw.write(SqlValueUtil.toSqlLiteral(model.getValueAt(r, c)));
             }
             bw.write(");");
@@ -535,15 +552,17 @@ public class TableDataTab extends AbstractTab
     JFileChooser fc = new JFileChooser();
     fc.setDialogTitle("导入 CSV 文件");
     fc.setFileFilter(new FileNameExtensionFilter("CSV 文件 (*.csv)", "csv"));
-    if(fc.showOpenDialog(this) != JFileChooser.APPROVE_OPTION)
+    if(fc.showOpenDialog(this) != JFileChooser.APPROVE_OPTION) {
       return;
+    }
 
     File file = fc.getSelectedFile();
     int confirm = JOptionPane.showConfirmDialog(this,
         "将从文件导入数据到表 " + tableName + "。\n" + "CSV 第一行必须为列名（与表列名对应），数据将直接写入数据库。\n\n继续吗?", "导入确认",
         JOptionPane.YES_NO_OPTION, JOptionPane.WARNING_MESSAGE);
-    if(confirm != JOptionPane.YES_OPTION)
+    if(confirm != JOptionPane.YES_OPTION) {
       return;
+    }
 
     new SwingWorker<int[], Void>()
     {
@@ -569,15 +588,17 @@ public class TableDataTab extends AbstractTab
               sb.append(quoteIdSql(tableName)).append(" (");
               for(int c = 0; c < headers.length; c++)
               {
-                if(c > 0)
+                if(c > 0) {
                   sb.append(", ");
+                }
                 sb.append(quoteIdSql(headers[c]));
               }
               sb.append(") VALUES (");
               for(int c = 0; c < headers.length; c++)
               {
-                if(c > 0)
+                if(c > 0) {
                   sb.append(", ");
+                }
                 String val = c < rowData.length ? rowData[c] : "";
                 sb.append("NULL".equalsIgnoreCase(val) || val.isEmpty() ? "NULL" : "'" + val.replace("'", "''") + "'");
               }
@@ -622,10 +643,12 @@ public class TableDataTab extends AbstractTab
 
   private static String csvEscape(String val)
   {
-    if(val == null)
+    if(val == null) {
       return "";
-    if(val.contains(",") || val.contains("\"") || val.contains("\n") || val.contains("\r"))
+    }
+    if(val.contains(",") || val.contains("\"") || val.contains("\n") || val.contains("\r")) {
       return "\"" + val.replace("\"", "\"\"") + "\"";
+    }
     return val;
   }
 
@@ -642,10 +665,11 @@ public class TableDataTab extends AbstractTab
       while((line = br.readLine()) != null)
       {
         // 跳过 BOM
-        if(!result.isEmpty() || !line.startsWith("\uFEFF"))
+        if(!result.isEmpty() || !line.startsWith("\uFEFF")) {
           result.add(splitCsvLine(line));
-        else
+        } else {
           result.add(splitCsvLine(line.substring(1)));
+        }
       }
     }
     return result;
@@ -668,23 +692,27 @@ public class TableDataTab extends AbstractTab
             cur.append('"');
             i++;
           }
-          else
+          else {
             inQuote = false;
+          }
         }
-        else
+        else {
           cur.append(ch);
+        }
       }
       else
       {
-        if(ch == '"')
+        if(ch == '"') {
           inQuote = true;
+        }
         else if(ch == ',')
         {
           fields.add(cur.toString());
           cur.setLength(0);
         }
-        else
+        else {
           cur.append(ch);
+        }
       }
     }
     fields.add(cur.toString());
@@ -693,13 +721,15 @@ public class TableDataTab extends AbstractTab
 
   private String quoteIdSql(String name)
   {
-    if(name == null || name.isBlank())
+    if(name == null || name.isBlank()) {
       return name;
+    }
     try
     {
       String product = ConnectionManager.getDatabaseProduct().toLowerCase();
-      if(product.contains("mysql"))
+      if(product.contains("mysql")) {
         return "`" + name.replace("`", "``") + "`";
+      }
     }
     catch(Exception ignored)
     {

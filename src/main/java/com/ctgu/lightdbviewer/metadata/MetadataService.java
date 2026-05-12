@@ -412,7 +412,8 @@ public class MetadataService
       return;
     }
     // ---------- PostgreSQL ENUM ----------
-    if(isPostgresEnum(conn, c.typeName))
+    String product = conn.getMetaData().getDatabaseProductName().toLowerCase(Locale.ROOT);
+    if(product.contains("postgresql") && isPostgresEnum(conn, c.typeName))
     {
       c.enumType = true;
       c.enumValues = loadPostgresEnumValues(conn, c.typeName);

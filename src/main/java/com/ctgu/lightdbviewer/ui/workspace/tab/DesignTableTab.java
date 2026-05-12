@@ -155,7 +155,9 @@ public class DesignTableTab extends AbstractTab
       public Class<?> getColumnClass(int col)
       {
         if(col == 5 || col == 6)
-          return Boolean.class; // 允许空、主键用 checkbox
+        {
+          return Boolean.class;
+        }
         return Object.class;
       }
     };
@@ -207,7 +209,7 @@ public class DesignTableTab extends AbstractTab
   private JScrollPane buildTextAreaTab(JTextArea area)
   {
     area.setEditable(false);
-    area.setFont(new Font(Font.MONOSPACED, Font.PLAIN, 14));
+    area.setFont(com.ctgu.lightdbviewer.util.FontManager.getCurrentFont());
     area.setLineWrap(true);
     area.setWrapStyleWord(true);
     area.setBorder(BorderFactory.createEmptyBorder(8, 8, 8, 8));
@@ -291,37 +293,53 @@ public class DesignTableTab extends AbstractTab
     {
       Object[] row = new Object[columnsModel.getColumnCount()];
       for(int c = 0; c < row.length; c++)
+      {
         row[c] = columnsModel.getValueAt(i, c);
+      }
       originalRows.add(row);
     }
     // 索引
     indexModel.setRowCount(0);
     for(String[] row : data.indexes)
+    {
       indexModel.addRow(row);
+    }
     // 外键
     fkModel.setRowCount(0);
     for(String[] row : data.foreignKeys)
+    {
       fkModel.addRow(row);
+    }
     // 唯一
     uniqueModel.setRowCount(0);
     for(String[] row : data.uniqueKeys)
+    {
       uniqueModel.addRow(row);
+    }
     // 检查
     checkModel.setRowCount(0);
     for(String[] row : data.checks)
+    {
       checkModel.addRow(row);
+    }
     // 排除
     excludeModel.setRowCount(0);
     for(String[] row : data.exclusions)
+    {
       excludeModel.addRow(row);
+    }
     // 规则
     ruleModel.setRowCount(0);
     for(String[] row : data.rules)
+    {
       ruleModel.addRow(row);
+    }
     // 触发器
     triggerModel.setRowCount(0);
     for(String[] row : data.triggers)
+    {
       triggerModel.addRow(row);
+    }
     // 选项
     optionsArea.setText(data.options);
     // 注释
@@ -363,7 +381,9 @@ public class DesignTableTab extends AbstractTab
       columnsModel.removeRow(row);
       // 重新编号
       for(int i = 0; i < columnsModel.getRowCount(); i++)
+      {
         columnsModel.setValueAt(i + 1, i, 0);
+      }
     }
   }
 
@@ -390,7 +410,9 @@ public class DesignTableTab extends AbstractTab
         JOptionPane.showConfirmDialog(this, "将执行以下 SQL:\n\n" + alterSql + "\n\n确认执行吗?", "保存表结构", JOptionPane.YES_NO_OPTION,
             JOptionPane.WARNING_MESSAGE);
     if(confirm != JOptionPane.YES_OPTION)
+    {
       return;
+    }
     try
     {
       try (Connection conn = ConnectionManager.get())
@@ -474,7 +496,9 @@ public class DesignTableTab extends AbstractTab
         sb.append("-- 新增列 ").append(name).append("\n");
         sb.append("ALTER TABLE ").append(qTable).append(" ADD COLUMN ").append(quote(name)).append(" ").append(fullType);
         if(!nullable)
+        {
           sb.append(" NOT NULL");
+        }
         if(!defVal.isEmpty())
           sb.append(" DEFAULT ").append(validateDefault(defVal));
         sb.append(";\n");
@@ -609,7 +633,9 @@ public class DesignTableTab extends AbstractTab
       {
         String idxName = rs.getString("INDEX_NAME");
         if(idxName == null)
+        {
           continue;
+        }
         String col = rs.getString("COLUMN_NAME");
         boolean nonUnique = rs.getBoolean("NON_UNIQUE");
         String type = switch(rs.getShort("TYPE"))
@@ -878,7 +904,9 @@ public class DesignTableTab extends AbstractTab
             sb.append("估计行数: ").append(rs.getLong(6)).append("\n");
             String opts = rs.getString(7);
             if(opts != null)
+            {
               sb.append("存储选项: ").append(opts).append("\n");
+            }
           }
         }
       }
@@ -963,20 +991,35 @@ public class DesignTableTab extends AbstractTab
         {
           sb.append("(").append(c.columnSize);
           if(c.decimalDigits > 0)
+          {
             sb.append(",").append(c.decimalDigits);
+          }
           sb.append(")");
         }
       }
       if(!c.nullable)
+      {
         sb.append(" NOT NULL");
+      }
       if(c.defaultValue != null && !c.defaultValue.isEmpty())
         sb.append(" DEFAULT ").append(validateDefault(c.defaultValue));
       if(c.pk)
+      {
         pkCols.add(c.name);
+      }
+      if(c.remarks != null && !c.remarks.isEmpty())
+      {
+        if(isPg)
+        {
+          sb.append(" -- ").append(c.remarks);
+        }
+        else
+        {
+          sb.append(" COMMENT '").append(c.remarks.replace("'", "''")).append("'");
+        }
+      }
       if(i < columns.size() - 1 || !pkCols.isEmpty())
         sb.append(",");
-      if(c.remarks != null && !c.remarks.isEmpty())
-        sb.append(" -- ").append(c.remarks);
       sb.append("\n");
     }
     if(!pkCols.isEmpty())
@@ -989,8 +1032,10 @@ public class DesignTableTab extends AbstractTab
       if(c.remarks != null && !c.remarks.isEmpty())
       {
         if(isPg)
+        {
           sb.append("COMMENT ON COLUMN ").append(qTable).append(".").append(c.name).append(" IS '").append(c.remarks.replace("'", "''"))
               .append("';\n");
+        }
       }
     }
     return sb.toString();
@@ -999,7 +1044,9 @@ public class DesignTableTab extends AbstractTab
   private static String kindStr(String k)
   {
     if(k == null)
+    {
       return "";
+    }
     return switch(k)
     {
       case "r" -> "普通表";
@@ -1018,7 +1065,9 @@ public class DesignTableTab extends AbstractTab
   private static String persistStr(String p)
   {
     if(p == null)
+    {
       return "";
+    }
     return switch(p)
     {
       case "p" -> "永久";
@@ -1031,7 +1080,9 @@ public class DesignTableTab extends AbstractTab
   private static String stripSchema(String qualifiedName)
   {
     if(qualifiedName == null)
+    {
       return "";
+    }
     int dot = qualifiedName.indexOf('.');
     return dot >= 0 ? qualifiedName.substring(dot + 1) : qualifiedName;
   }
@@ -1039,7 +1090,9 @@ public class DesignTableTab extends AbstractTab
   private static String extractSchema(String qualifiedName)
   {
     if(qualifiedName == null)
+    {
       return null;
+    }
     int dot = qualifiedName.indexOf('.');
     return dot >= 0 ? qualifiedName.substring(0, dot) : null;
   }
@@ -1047,12 +1100,19 @@ public class DesignTableTab extends AbstractTab
   private static String quote(String name)
   {
     if(name == null)
+    {
       return "\"\"";
+    }
     return "\"" + name.replace("\"", "\"\"") + "\"";
   }
 
+  private static final java.util.Set<String> SQL_KEYWORDS =
+      java.util.Set.of("NULL", "CURRENT_TIMESTAMP", "CURRENT_DATE", "CURRENT_TIME", "TRUE", "FALSE");
+
   /**
-   * 校验默认值表达式：只允许单表达式，禁止多语句/注释注入
+   * 校验默认值表达式并添加必要的引号。
+   * MySQL 的 COLUMN_DEF 返回的字符串默认值不带引号（如 info），
+   * 而 DDL 中字符串必须加引号（如 'info'）。
    */
   private static String validateDefault(String val)
   {
@@ -1061,7 +1121,27 @@ public class DesignTableTab extends AbstractTab
     String trimmed = val.trim();
     if(trimmed.contains(";") || trimmed.contains("--") || trimmed.contains("/*"))
       throw new IllegalArgumentException("默认值包含非法字符: " + trimmed);
-    return trimmed;
+
+    // 已经带单引号（如 'info' 或 b'0'）
+    if(trimmed.startsWith("'") || trimmed.startsWith("b'"))
+      return trimmed;
+
+    String upper = trimmed.toUpperCase(Locale.ROOT);
+
+    // SQL 关键字
+    if(SQL_KEYWORDS.contains(upper) || upper.startsWith("CURRENT_TIMESTAMP"))
+      return trimmed;
+
+    // 函数/表达式（含括号且以 ) 结尾）
+    if(trimmed.contains("(") && trimmed.endsWith(")"))
+      return trimmed;
+
+    // 纯数字（整数或小数，可能带负号）
+    if(trimmed.matches("-?\\d+(\\.\\d+)?"))
+      return trimmed;
+
+    // 字符串——加单引号，转义内部引号
+    return "'" + trimmed.replace("'", "''") + "'";
   }
 
   private static String str(Object obj)
@@ -1104,7 +1184,9 @@ public class DesignTableTab extends AbstractTab
       {
         Object val = m.getValueAt(row, col);
         if(val != null)
+        {
           width = Math.max(width, cellFm.stringWidth(val.toString()) + padding);
+        }
       }
       tc.setPreferredWidth(Math.min(width, maxWidth));
     }

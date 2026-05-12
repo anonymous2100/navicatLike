@@ -282,8 +282,9 @@ public class MainFrame extends JFrame
             JMenuItem item = new JMenuItem(title);
             int idx = i;
             item.addActionListener(ev -> workspace.setSelectedIndex(idx));
-            if(i == workspace.getSelectedIndex())
+            if(i == workspace.getSelectedIndex()) {
               item.setFont(item.getFont().deriveFont(Font.BOLD));
+            }
             menu.add(item);
           }
         }
@@ -446,8 +447,9 @@ public class MainFrame extends JFrame
   public void autoConnectSaved()
   {
     java.util.List<SavedConnection> conns = AppConfig.getInstance().getConnections();
-    if(conns.isEmpty())
+    if(conns.isEmpty()) {
       return;
+    }
     SavedConnection sc = conns.get(0);
     DbConfig cfg = sc.toDbConfig();
     try

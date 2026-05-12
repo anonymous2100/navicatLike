@@ -172,7 +172,9 @@ public class ObjectExplorerPanel extends JPanel
   private void collapseAll()
   {
     for(int i = tree.getRowCount() - 1; i > 0; i--)
+    {
       tree.collapseRow(i);
+    }
   }
 
   /**
@@ -214,7 +216,9 @@ public class ObjectExplorerPanel extends JPanel
       {
         TreePath result = findTableNodePath(child, targetName);
         if(result != null)
+        {
           return result;
+        }
       }
     }
     return null;
@@ -578,25 +582,33 @@ public class ObjectExplorerPanel extends JPanel
       {
         ensureDatabase(node.getDbName());
         for(String v : MetadataService.listViews(node.getSchemaName()))
+        {
           result.add(leaf(ExplorerNodeType.VIEW, v, node.getDbName(), node.getSchemaName()));
+        }
       }
       case FUNCTIONS_FOLDER ->
       {
         ensureDatabase(node.getDbName());
         for(String f : MetadataService.listFunctions(node.getSchemaName()))
+        {
           result.add(leaf(ExplorerNodeType.FUNCTION, f, node.getDbName(), node.getSchemaName()));
+        }
       }
       case PROCEDURES_FOLDER ->
       {
         ensureDatabase(node.getDbName());
         for(String p : MetadataService.listProcedures(node.getSchemaName()))
+        {
           result.add(leaf(ExplorerNodeType.PROCEDURE, p, node.getDbName(), node.getSchemaName()));
+        }
       }
       case TRIGGERS_FOLDER ->
       {
         ensureDatabase(node.getDbName());
         for(String t : MetadataService.listTriggers(node.getSchemaName()))
+        {
           result.add(leaf(ExplorerNodeType.TRIGGER, t, node.getDbName(), node.getSchemaName()));
+        }
       }
       case CONNECTION ->
       {
@@ -604,7 +616,9 @@ public class ObjectExplorerPanel extends JPanel
         for(int i = 0; i < node.getChildCount(); i++)
         {
           if(node.getChildAt(i) instanceof ExplorerTreeNode child)
+          {
             result.add(child);
+          }
         }
       }
       default ->
@@ -644,7 +658,9 @@ public class ObjectExplorerPanel extends JPanel
     node.setDbName(dbName);
     node.setSchemaName(schemaName);
     if(withLoading)
+    {
       node.add(new ExplorerTreeNode(ExplorerNodeType.LOADING, "Loading..."));
+    }
     return node;
   }
 
@@ -670,7 +686,9 @@ public class ObjectExplorerPanel extends JPanel
   private void ensureDatabase(String dbName) throws Exception
   {
     if(dbName != null && !dbName.equals(ConnectionManager.getCurrentDatabase()))
+    {
       ConnectionManager.switchDatabase(dbName);
+    }
   }
 
   private String buildConnectionLabel()
@@ -707,7 +725,9 @@ public class ObjectExplorerPanel extends JPanel
         {
           TreePath path = tree.getSelectionPath();
           if(path != null && path.getLastPathComponent() instanceof ExplorerTreeNode node)
+          {
             handleDoubleClick(node);
+          }
         }
       }
 
@@ -825,7 +845,9 @@ public class ObjectExplorerPanel extends JPanel
     }
     JPopupMenu menu = buildPopupMenu(node);
     if(menu != null)
+    {
       menu.show(tree, e.getX(), e.getY());
+    }
   }
 
   private JPopupMenu buildPopupMenu(ExplorerTreeNode node)

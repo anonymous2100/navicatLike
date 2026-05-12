@@ -99,7 +99,9 @@ public class SettingsDialog extends JDialog
       {
         String selected = categoryList.getSelectedValue();
         if(selected != null)
+        {
           cardLayout.show(cardPanel, selected);
+        }
       }
     });
     JScrollPane listScroll = new JScrollPane(categoryList);
@@ -176,7 +178,9 @@ public class SettingsDialog extends JDialog
       idx++;
     }
     if(selectedIdx >= 0)
+    {
       themeCombo.setSelectedIndex(selectedIdx);
+    }
     p.add(themeCombo, gbc);
     row++;
     // 语言
@@ -291,7 +295,9 @@ public class SettingsDialog extends JDialog
     for(String f : monoFonts)
     {
       if(avail.contains(f) || "Monospaced".equals(f))
+      {
         editorFontCombo.addItem(f);
+      }
     }
     editorFontCombo.setSelectedItem(currentFont);
     p.add(editorFontCombo, gbc);

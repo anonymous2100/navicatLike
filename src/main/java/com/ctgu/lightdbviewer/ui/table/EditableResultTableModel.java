@@ -35,8 +35,9 @@ public class EditableResultTableModel extends DefaultTableModel
   public boolean isCellEditable(int r, int c)
   {
     // DELETE 标记行不可编辑
-    if(rowStates.get(r) == ChangeType.DELETE)
+    if(rowStates.get(r) == ChangeType.DELETE) {
       return false;
+    }
     return c != 0;
   }
 
@@ -65,8 +66,9 @@ public class EditableResultTableModel extends DefaultTableModel
   public void addInsertRow()
   {
     int cols = getColumnCount();
-    if(cols == 0)
+    if(cols == 0) {
       return;
+    }
     Object[] row = new Object[cols];
     super.addRow(row);
 
@@ -93,8 +95,9 @@ public class EditableResultTableModel extends DefaultTableModel
    */
   public void markDeleteRow(int row)
   {
-    if(row < 0 || row >= getRowCount())
+    if(row < 0 || row >= getRowCount()) {
       return;
+    }
 
     ChangeType currentState = rowStates.get(row);
 

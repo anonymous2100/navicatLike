@@ -87,8 +87,9 @@ public final class SqlSyntaxHighlighter
     StringBuilder sb = new StringBuilder();
     for(int i = 0; i < kw.length; i++)
     {
-      if(i > 0)
+      if(i > 0) {
         sb.append('|');
+      }
       sb.append(Pattern.quote(kw[i]));
     }
     return sb.toString();

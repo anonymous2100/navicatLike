@@ -87,11 +87,15 @@ public class SqlToolbar extends JPanel
     row.setBorder(BorderFactory.createEmptyBorder(0, 4, 0, 4));
     saveButton.addActionListener(e -> {
       if(onSave != null)
+      {
         onSave.run();
+      }
     });
     beautifyButton.addActionListener(e -> {
       if(onBeautify != null)
+      {
         onBeautify.run();
+      }
     });
     clearButton.addActionListener(e -> onClear.run());
     aiButton.addActionListener(e -> onAskAi());
@@ -117,7 +121,9 @@ public class SqlToolbar extends JPanel
     dbCombo.setToolTipText("切换数据库");
     dbCombo.addActionListener(e -> {
       if(!suppressDbListener)
+      {
         onDbSelected();
+      }
     });
     schemaCombo.setPrototypeDisplayValue("public    ");
     schemaCombo.setToolTipText("切换 Schema");
@@ -361,7 +367,9 @@ public class SqlToolbar extends JPanel
       public void actionPerformed(java.awt.event.ActionEvent e)
       {
         if(stopButton.isEnabled())
+        {
           stopButton.doClick();
+        }
       }
     });
   }

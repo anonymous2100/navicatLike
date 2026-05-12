@@ -124,8 +124,9 @@ public class ConnectionDialog extends JDialog
       JLabel lbl = new JLabel(labels[i] + "  ");
       lbl.setHorizontalAlignment(SwingConstants.RIGHT);
       form.add(lbl, left);
-      if(fields[i] instanceof JTextField tf)
+      if(fields[i] instanceof JTextField tf) {
         tf.setPreferredSize(new Dimension(FIELD_WIDTH, tf.getPreferredSize().height));
+      }
       form.add(fields[i], right);
     }
 
@@ -168,13 +169,16 @@ public class ConnectionDialog extends JDialog
   private void loadSavedConnections()
   {
     listModel.clear();
-    for(SavedConnection sc : AppConfig.getInstance().getConnections())
+    for(SavedConnection sc : AppConfig.getInstance().getConnections()) {
       listModel.addElement(sc);
+    }
   }
 
   private void loadIntoForm(SavedConnection sc)
   {
-    if(sc == null) return;
+    if(sc == null) {
+      return;
+    }
     nameField.setText(sc.name);
     typeCombo.setSelectedItem(sc.type);
     hostField.setText(sc.host);
@@ -200,10 +204,14 @@ public class ConnectionDialog extends JDialog
   private void deleteSelected()
   {
     SavedConnection sc = connectionList.getSelectedValue();
-    if(sc == null) return;
+    if(sc == null) {
+      return;
+    }
     int confirm = JOptionPane.showConfirmDialog(this,
         "删除连接 \"" + sc + "\" ？", "删除连接", JOptionPane.YES_NO_OPTION);
-    if(confirm != JOptionPane.YES_OPTION) return;
+    if(confirm != JOptionPane.YES_OPTION) {
+      return;
+    }
     AppConfig.getInstance().removeConnection(sc);
     AppConfig.getInstance().save();
     loadSavedConnections();

@@ -66,8 +66,9 @@ public class DatabaseTree extends JPanel
   private void handleMouse(MouseEvent e)
   {
     TreePath path = tree.getPathForLocation(e.getX(), e.getY());
-    if(path == null)
+    if(path == null) {
       return;
+    }
 
     tree.setSelectionPath(path);
     Object node = path.getLastPathComponent();

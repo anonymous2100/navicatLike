@@ -203,7 +203,9 @@ public class QueryTab extends AbstractTab
   {
     String sql = editorPanel.getSqlText();
     if(sql == null || sql.isBlank())
+    {
       return;
+    }
     editorPanel.setSql(beautify(sql));
     status.setMessage("SQL 已格式化");
   }
@@ -233,11 +235,17 @@ public class QueryTab extends AbstractTab
     {
       String line = lines[i].trim();
       if(line.isEmpty())
+      {
         continue;
+      }
       if(i == 0)
+      {
         sb.append(line);
+      }
       else
+      {
         sb.append("\n  ").append(line);
+      }
     }
     return sb.toString();
   }
@@ -329,7 +337,9 @@ public class QueryTab extends AbstractTab
     sqlHistory.remove(sql);
     sqlHistory.addFirst(sql);
     while(sqlHistory.size() > HISTORY_LIMIT)
+    {
       sqlHistory.removeLast();
+    }
   }
 
   private String normalizeSql(String sql)

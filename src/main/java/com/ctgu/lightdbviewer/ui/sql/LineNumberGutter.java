@@ -118,8 +118,9 @@ public class LineNumberGutter extends JPanel
         try
         {
           Rectangle2D r = textPane.modelToView2D(lineElem.getStartOffset());
-          if(r == null)
+          if(r == null) {
             continue;
+          }
 
           int y = (int)r.getY() + fm.getAscent();
           String num = String.valueOf(i + 1);

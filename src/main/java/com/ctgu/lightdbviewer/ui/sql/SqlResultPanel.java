@@ -152,12 +152,14 @@ public class SqlResultPanel extends JPanel
 
       private void maybeShowPopup(MouseEvent e)
       {
-        if(!e.isPopupTrigger())
+        if(!e.isPopupTrigger()) {
           return;
+        }
         // 右键点中某行但不在已有选区内时，单独选中该行
         int row = table.rowAtPoint(e.getPoint());
-        if(row >= 0 && !table.isRowSelected(row))
+        if(row >= 0 && !table.isRowSelected(row)) {
           table.setRowSelectionInterval(row, row);
+        }
 
         boolean hasSel = table.getSelectedRowCount() > 0;
         copyInsert.setEnabled(hasSel);
@@ -410,10 +412,12 @@ public class SqlResultPanel extends JPanel
 
   public void setPageActions(Runnable prevAction, Runnable nextAction)
   {
-    for(java.awt.event.ActionListener l : prevPageButton.getActionListeners())
+    for(java.awt.event.ActionListener l : prevPageButton.getActionListeners()) {
       prevPageButton.removeActionListener(l);
-    for(java.awt.event.ActionListener l : nextPageButton.getActionListeners())
+    }
+    for(java.awt.event.ActionListener l : nextPageButton.getActionListeners()) {
       nextPageButton.removeActionListener(l);
+    }
     prevPageButton.addActionListener(e -> prevAction.run());
     nextPageButton.addActionListener(e -> nextAction.run());
   }
