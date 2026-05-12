@@ -10,6 +10,7 @@ import java.awt.*;
  */
 public class StatusBarPanel extends JPanel
 {
+  private final JLabel healthLabel = new JLabel(new CircleIcon(Color.GRAY));
   private final JLabel messageLabel = new JLabel("就绪");
   private final JLabel elapsedLabel = new JLabel("耗时: -");
   private final JLabel contextLabel = new JLabel("未连接");
@@ -28,7 +29,11 @@ public class StatusBarPanel extends JPanel
     rightGroup.add(editorPosLabel);
     rightGroup.add(elapsedLabel);
     rightGroup.add(contextLabel);
-    add(messageLabel, BorderLayout.WEST);
+    JPanel leftGroup = new JPanel(new FlowLayout(FlowLayout.LEFT, 6, 0));
+    leftGroup.setOpaque(false);
+    leftGroup.add(healthLabel);
+    leftGroup.add(messageLabel);
+    add(leftGroup, BorderLayout.WEST);
     add(rightGroup, BorderLayout.EAST);
   }
 
@@ -69,6 +74,46 @@ public class StatusBarPanel extends JPanel
   public void clearEditorPosition()
   {
     editorPosLabel.setText("");
+  }
+
+  public void setConnected(boolean connected)
+  {
+    healthLabel.setIcon(new CircleIcon(connected ? Color.GREEN : Color.RED));
+  }
+
+  public void setHealthCheckResult(boolean healthy, String message)
+  {
+    healthLabel.setIcon(new CircleIcon(healthy ? Color.GREEN : Color.RED));
+    healthLabel.setToolTipText(message);
+  }
+
+  private static class CircleIcon implements Icon
+  {
+    private final Color color;
+
+    CircleIcon(Color color)
+    {
+      this.color = color;
+    }
+
+    @Override
+    public void paintIcon(Component c, Graphics g, int x, int y)
+    {
+      g.setColor(color);
+      g.fillOval(x, y, 8, 8);
+    }
+
+    @Override
+    public int getIconWidth()
+    {
+      return 8;
+    }
+
+    @Override
+    public int getIconHeight()
+    {
+      return 8;
+    }
   }
 }
 

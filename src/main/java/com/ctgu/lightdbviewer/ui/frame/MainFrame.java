@@ -248,7 +248,7 @@ public class MainFrame extends JFrame
 
     JMenuItem options = new JMenuItem("选项");
     options.addActionListener(e -> {
-      SettingsDialog dialog = new SettingsDialog(this);
+      SettingsDialog dialog = new SettingsDialog(MainFrame.this);
       dialog.setVisible(true);
     });
     menu.add(options);

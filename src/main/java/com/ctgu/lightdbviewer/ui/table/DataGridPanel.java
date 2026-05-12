@@ -4,6 +4,7 @@ import com.ctgu.lightdbviewer.jdbc.ConnectionManager;
 import com.ctgu.lightdbviewer.util.SqlValueUtil;
 
 import javax.swing.*;
+import javax.swing.table.DefaultTableCellRenderer;
 import javax.swing.table.TableColumn;
 import javax.swing.table.TableColumnModel;
 import javax.swing.table.TableModel;
@@ -37,6 +38,9 @@ public class DataGridPanel extends JScrollPane
     // ── Navicat 风格行状态渲染器（绿/黄/红 + NULL 灰斜体 + PK 粗体）
     rowStateRenderer = new RowStateRenderer(model);
     table.setDefaultRenderer(Object.class, rowStateRenderer);
+
+    // ── 列头变更指示器（行有未提交修改时显示橙色下划线）
+    table.getTableHeader().setDefaultRenderer(new ChangeAwareHeaderRenderer(table));
 
     setViewportView(table);
 
@@ -272,6 +276,27 @@ public class DataGridPanel extends JScrollPane
       }
       width = Math.min(width, maxWidth);
       tc.setPreferredWidth(width);
+    }
+  }
+
+  private static class ChangeAwareHeaderRenderer extends DefaultTableCellRenderer
+  {
+    private final JTable table;
+
+    ChangeAwareHeaderRenderer(JTable table)
+    {
+      this.table = table;
+    }
+
+    @Override
+    public Component getTableCellRendererComponent(JTable t, Object value, boolean isSelected, boolean hasFocus, int row, int col)
+    {
+      super.getTableCellRendererComponent(t, value, isSelected, hasFocus, row, col);
+      if(table.getModel() instanceof EditableResultTableModel model && model.isDirty())
+      {
+        setBorder(BorderFactory.createMatteBorder(0, 0, 2, 0, new Color(255, 180, 0)));
+      }
+      return this;
     }
   }
 }

@@ -96,6 +96,11 @@ public class RowStateRenderer extends DefaultTableCellRenderer
     if(isNull) {
       fontStyle |= Font.ITALIC;
     }
+    // ── 4b. PK 背景：无状态色也不选中时，显示 PK 专有背景 ──
+    if(isPk && stateColor == null && !isSelected)
+    {
+      setBackground(UiConstants.COLOR_PK_BG);
+    }
     if(fontStyle != Font.PLAIN)
     {
       setFont(table.getFont().deriveFont(fontStyle));

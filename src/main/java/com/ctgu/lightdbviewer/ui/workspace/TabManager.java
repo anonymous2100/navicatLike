@@ -8,6 +8,7 @@ import com.ctgu.lightdbviewer.ui.workspace.tab.AbstractTab;
 import com.ctgu.lightdbviewer.ui.workspace.tab.DesignTableTab;
 import com.ctgu.lightdbviewer.ui.workspace.tab.ObjectListTab;
 import com.ctgu.lightdbviewer.ui.workspace.tab.QueryTab;
+import com.ctgu.lightdbviewer.ui.workspace.tab.SettingsTab;
 import com.ctgu.lightdbviewer.ui.workspace.tab.TableDataTab;
 
 import java.sql.Connection;
@@ -219,6 +220,24 @@ public class TabManager
       ObjectListTab tab = new ObjectListTab(ObjectListTab.ObjectType.TABLES, status, this, dbName, schemaName);
       opened.put(k, tab);
       tabs.addTab(title, tab);
+    }
+    tabs.setSelectedComponent(opened.get(k));
+  }
+
+  public void openSettings()
+  {
+    String k = "SETTINGS";
+    AbstractTab existing = opened.get(k);
+    if(existing != null && existing.getParent() == null)
+    {
+      opened.remove(k);
+      existing = null;
+    }
+    if(existing == null)
+    {
+      SettingsTab tab = new SettingsTab();
+      opened.put(k, tab);
+      tabs.addTab("选项", tab);
     }
     tabs.setSelectedComponent(opened.get(k));
   }

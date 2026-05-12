@@ -1,9 +1,9 @@
 package com.ctgu.lightdbviewer.ui.explorer;
 
+import com.ctgu.lightdbviewer.ui.common.ConfirmDialog;
 import com.ctgu.lightdbviewer.ui.workspace.TabManager;
 
 import javax.swing.*;
-import java.awt.*;
 
 /**
  * @author lihuahui
@@ -45,17 +45,7 @@ public final class ExplorerPopupMenuFactory
     menu.addSeparator();
     JMenuItem truncate = new JMenuItem("清空表数据");
     truncate.addActionListener(e -> {
-      int first = JOptionPane.showConfirmDialog(null,
-          "确定要清空表 \"" + tableName + "\" 中的所有数据吗？\n\n此操作不可撤销。",
-          "清空表数据", JOptionPane.YES_NO_OPTION, JOptionPane.WARNING_MESSAGE);
-      if(first != JOptionPane.YES_OPTION)
-      {
-        return;
-      }
-      int second = JOptionPane.showConfirmDialog(null,
-          "请再次确认：\n\n表 \"" + tableName + "\" 中的所有行将被删除，\n数据无法恢复！\n\n是否继续？",
-          "清空表数据 - 再次确认", JOptionPane.YES_NO_OPTION, JOptionPane.ERROR_MESSAGE);
-      if(second == JOptionPane.YES_OPTION)
+      if(ConfirmDialog.confirmDangerousTwice(null, "清空表数据", "确定要清空表 \"" + tableName + "\" 中的所有数据吗？\n\n此操作不可撤销。", "TRUNCATE"))
       {
         tabManager.truncateTable(tableName);
       }
@@ -63,7 +53,7 @@ public final class ExplorerPopupMenuFactory
     menu.add(truncate);
     JMenuItem dropTable = new JMenuItem("删除表");
     dropTable.addActionListener(e -> {
-      if(confirmDrop(null, "删除表", tableName))
+      if(ConfirmDialog.confirmDangerousTwice(null, "删除表", "确定要删除表 \"" + tableName + "\" 吗？\n\n删除后数据无法恢复。", "DROP"))
       {
         tabManager.dropObject("表", "DROP TABLE", tableName);
       }
@@ -91,7 +81,7 @@ public final class ExplorerPopupMenuFactory
     menu.addSeparator();
     JMenuItem dropView = new JMenuItem("删除视图");
     dropView.addActionListener(e -> {
-      if(confirmDrop(null, "删除视图", viewName))
+      if(ConfirmDialog.confirmDangerousTwice(null, "删除视图", "确定要删除视图 \"" + viewName + "\" 吗？\n\n删除后数据无法恢复。", "DROP"))
       {
         tabManager.dropObject("视图", "DROP VIEW", viewName);
       }
@@ -114,7 +104,7 @@ public final class ExplorerPopupMenuFactory
     JMenuItem dropRoutine = new JMenuItem("删除");
     dropRoutine.addActionListener(e -> {
       String typeLabel = routineTypeLabel(routineType);
-      if(confirmDrop(null, typeLabel, routineName))
+      if(ConfirmDialog.confirmDangerousTwice(null, "删除" + typeLabel, "确定要删除" + typeLabel + " \"" + routineName + "\" 吗？\n\n删除后数据无法恢复。", "DROP"))
       {
         tabManager.dropObject(typeLabel, routineDropPrefix(routineType), routineName);
       }
@@ -180,7 +170,7 @@ public final class ExplorerPopupMenuFactory
     menu.addSeparator();
     JMenuItem dropDb = new JMenuItem("删除数据库");
     dropDb.addActionListener(e -> {
-      if(confirmDrop(null, "数据库", dbName))
+      if(ConfirmDialog.confirmDangerousTwice(null, "删除数据库", "确定要删除数据库 \"" + dbName + "\" 吗？\n\n所有数据将被永久删除！", "DROP"))
       {
         tabManager.dropObject("数据库", "DROP DATABASE", dbName);
       }
@@ -207,24 +197,6 @@ public final class ExplorerPopupMenuFactory
     refresh.addActionListener(e -> tabManager.refresh());
     menu.add(refresh);
     return menu;
-  }
-
-  /**
-   * 两步确认删除：第一次确认 → 第二次再次警告 → 两次都点"是"才返回 true
-   */
-  private static boolean confirmDrop(Component parent, String typeLabel, String name)
-  {
-    int first = JOptionPane.showConfirmDialog(parent,
-        "确定要删除" + typeLabel + " \"" + name + "\" 吗？\n\n删除后数据无法恢复。",
-        "删除" + typeLabel, JOptionPane.YES_NO_OPTION, JOptionPane.WARNING_MESSAGE);
-    if(first != JOptionPane.YES_OPTION)
-    {
-      return false;
-    }
-    int second = JOptionPane.showConfirmDialog(parent,
-        "请再次确认：\n\n" + typeLabel + " \"" + name + "\" 将被永久删除，\n数据无法恢复！\n\n是否继续？",
-        "删除" + typeLabel + " - 再次确认", JOptionPane.YES_NO_OPTION, JOptionPane.ERROR_MESSAGE);
-    return second == JOptionPane.YES_OPTION;
   }
 
   private static String templateSql(ExplorerNodeType routineType, String routineName)
