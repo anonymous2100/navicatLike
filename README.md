@@ -24,6 +24,8 @@
 | **字体配置** | 独立配置 UI 字体和编辑器字体 |
 | **连接导入/导出** | XML 格式，含加密密码 |
 | **收藏夹** | 快速访问常用表 |
+| **AI 助手** | SQL 自然语言转 SQL（NL2SQL）、SQL 解释、错误诊断（基于 LangChain4j + DeepSeek 等 API） |
+| **AI 回复 Markdown 渲染** | 使用 CommonMark 解析 Markdown，JEditorPane 渲染 HTML，支持复制纯净文本和导出 .md 文件 |
 | **日志系统** | SLF4J + Logback，控制台 + 滚动文件输出（30 天保留，100MB 上限） |
 | **国际化框架** | 中英文资源包就绪（UI 层尚未全部接入） |
 | **错误处理** | 用户友好的错误提示，SQL 状态码日志，Toast 通知 |
@@ -37,7 +39,6 @@
 - 数据同步
 - 结构同步
 - 历史日志
-- AI 助手
 - 代码补全
 - 语法高亮（当前使用纯 JTextArea）
 - 自动备份
@@ -58,6 +59,7 @@
 | 日志 | SLF4J 2.0.9 + Logback 1.4.14 |
 | 测试 | JUnit 5 + Mockito + TestContainers |
 | 连接序列化 | JAXB (XML)、Java Properties |
+| Markdown 渲染 | CommonMark 0.21.0 |
 
 ---
 
@@ -168,7 +170,8 @@ mvn test
 - **浏览**：分页显示，底部工具栏切换页码和每页行数
 - **编辑**：直接修改单元格值，增删行
 - **保存**：点击保存按钮，变更在单个事务中提交
-- 变更行颜色标记：新增（绿色）、修改（蓝色）、删除（红色）
+- 变更行颜色标记：新增（绿色）、修改（黄色）、删除（红色）
+- NULL 值以灰色斜体显示，主键列以粗体 + 浅灰背景标识
 
 ### SQL 查询
 
@@ -187,9 +190,10 @@ mvn test
 
 ### 设置
 
-工具 → 选项：
+工具 → 选项（弹窗或标签页）：
 - 常规：UI 字体、字号、主题、背景色
 - 编辑器：编辑器字体、字号
+- AI：模型选择、API 地址、API Key、最大 Token、超时
 - 文件位置：配置与日志文件路径
 
 ---
@@ -206,13 +210,18 @@ MainApp (入口)
        ├── JMenuBar (菜单)
        ├── JToolBar (工具栏)
        ├── JSplitPane
-       │    ├── ObjectExplorerPanel (左侧对象树，懒加载)
-       │    └── WorkspaceTabs (右侧标签页工作区)
-       │         ├── TableDataTab (表数据浏览/编辑)
-       │         ├── QueryTab (SQL 查询)
-       │         ├── DesignTableTab (表结构设计)
-       │         └── ObjectListTab (对象列表浏览)
-       └── StatusBarPanel (状态栏)
+        │    ├── ObjectExplorerPanel (左侧对象树，懒加载)
+        │    └── WorkspaceTabs (右侧标签页工作区)
+        │         ├── TableDataTab (表数据浏览/编辑)
+        │         ├── QueryTab (SQL 查询)
+        │         ├── DesignTableTab (表结构设计)
+        │         ├── ObjectListTab (对象列表浏览)
+        │         └── SettingsTab (选项设置)
+        ├── AI 面板
+        │    ├── Nl2SqlPanel (自然语言转 SQL)
+        │    ├── SqlExplainPanel (SQL 解释)
+        │    └── AiErrorDialog (错误诊断)
+        └── StatusBarPanel (状态栏，含连接健康指示器)
 ```
 
 ### 分层设计
@@ -347,12 +356,17 @@ src/main/java/com/ctgu/lightdbviewer/
     │   ├── WorkspaceTabs.java            # 标签页容器
     │   ├── TabManager.java               # 标签页管理器
     │   └── tab/                          # 各类功能标签页
-    │       ├── AbstractTab.java          # 标签页抽象基类
-    │       ├── TableDataTab.java         # 表数据浏览/编辑页
-    │       ├── QueryTab.java             # SQL 查询页
-    │       ├── DesignTableTab.java       # 表结构设计页
-    │       └── ObjectListTab.java        # 对象列表页
-    ├── explorer/                         # 左侧对象树浏览器
+│       ├── AbstractTab.java          # 标签页抽象基类
+│       ├── TableDataTab.java         # 表数据浏览/编辑页
+│       ├── QueryTab.java             # SQL 查询页
+│       ├── DesignTableTab.java       # 表结构设计页
+│       ├── ObjectListTab.java        # 对象列表页
+│       └── SettingsTab.java          # 选项设置页
+├── ai/                                # AI 集成
+│   ├── AiService.java                # AI 服务封装
+│   ├── AiConfig.java                 # AI 配置模型
+│   └── ...
+├── explorer/                         # 左侧对象树浏览器
     │   ├── ObjectExplorerPanel.java      # 对象树主面板
     │   ├── ExplorerTreeNode.java         # 树节点模型
     │   ├── ExplorerNodeType.java         # 节点类型枚举

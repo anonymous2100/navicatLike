@@ -312,161 +312,338 @@ public class SettingsTab extends AbstractTab
   // AI 面板
   // ================================================================
 
-  private JComboBox<String> aiModelName;
-  private JTextField aiEndpoint;
-  private JTextField aiApiKey;
+  private JCheckBox aiShow;
   private JCheckBox aiEnabled;
-  private JSpinner aiMaxTokens;
-  private JSpinner aiTimeout;
+  private DefaultListModel<com.ctgu.lightdbviewer.ai.AiModelItem> aiListModel;
+  private JList<com.ctgu.lightdbviewer.ai.AiModelItem> aiList;
+  private JTextField aiNameField;
+  private JTextField aiProviderField;
+  private JTextField aiHostField;
+  private JTextField aiEndpointField;
+  private JTextField aiApiKeyField;
+  private JTextField aiModelField;
+  private JSpinner aiTemperatureSpinner;
+  private JTextArea aiDescArea;
+  private JComboBox<String> aiEnterActionCombo;
+  private JCheckBox aiCompareMode;
+  private JComboBox<String> aiLanguageCombo;
   private JLabel aiTestResult;
-
-  /** 预设模型 → 默认 API 地址映射 */
-  private static final java.util.Map<String, String> MODEL_ENDPOINT_MAP = new java.util.LinkedHashMap<>();
-  static
-  {
-    MODEL_ENDPOINT_MAP.put("deepseek-chat", "https://api.deepseek.com/v1");
-    MODEL_ENDPOINT_MAP.put("deepseek-reasoner", "https://api.deepseek.com/v1");
-    MODEL_ENDPOINT_MAP.put("gpt-4o", "https://api.openai.com/v1");
-    MODEL_ENDPOINT_MAP.put("gpt-4o-mini", "https://api.openai.com/v1");
-    MODEL_ENDPOINT_MAP.put("claude-3.5-sonnet", "https://api.anthropic.com");
-    MODEL_ENDPOINT_MAP.put("自定义", "");
-  }
 
   private JPanel createAiPanel()
   {
-    JPanel p = new JPanel(new GridBagLayout());
-    GridBagConstraints gbc = gbc();
+    JPanel p = new JPanel(new BorderLayout(0, 8));
+    p.setBorder(BorderFactory.createEmptyBorder(4, 0, 4, 0));
 
-    int row = 0;
-    gbc.gridx = 0;
-    gbc.gridy = row;
-    p.add(new JLabel("启用："), gbc);
-    gbc.gridx = 1;
-    aiEnabled = new JCheckBox("启用 AI 助手");
+    // ── 顶部：复选框行 ──
+    JPanel topRow = new JPanel(new FlowLayout(FlowLayout.LEFT, 16, 0));
+    topRow.setBorder(BorderFactory.createEmptyBorder(0, 0, 4, 0));
+    aiShow = new JCheckBox("显示AI功能");
+    aiShow.setSelected("true".equals(readProp("ai.show", "true")));
+    aiEnabled = new JCheckBox("启用AI助手");
     aiEnabled.setSelected("true".equals(readProp("ai.enabled", "true")));
-    p.add(aiEnabled, gbc);
-    row++;
+    topRow.add(aiShow);
+    topRow.add(aiEnabled);
 
-    gbc.gridx = 0;
-    gbc.gridy = row;
-    p.add(new JLabel("大模型："), gbc);
-    gbc.gridx = 1;
-    String savedModel = readProp("ai.model", "deepseek-chat");
-    aiModelName = new JComboBox<>();
-    boolean foundInPreset = false;
-    for(String preset : MODEL_ENDPOINT_MAP.keySet())
-    {
-      aiModelName.addItem(preset);
-      if(preset.equals(savedModel))
+    // ── AI助手 区域 ──
+    JPanel assistantPanel = new JPanel(new BorderLayout(6, 6));
+    assistantPanel.setBorder(BorderFactory.createTitledBorder("AI助手"));
+    aiListModel = new DefaultListModel<>();
+    loadAiModelsFromConfig();
+    aiList = new JList<>(aiListModel);
+    aiList.setSelectionMode(ListSelectionModel.SINGLE_SELECTION);
+    aiList.setFixedCellWidth(140);
+    aiList.addListSelectionListener(e -> {
+      if(!e.getValueIsAdjusting())
       {
-        foundInPreset = true;
-      }
-    }
-    if(!foundInPreset && !savedModel.isBlank())
-    {
-      aiModelName.addItem(savedModel);
-    }
-    aiModelName.setSelectedItem(savedModel);
-    aiModelName.setEditable(true);
-    aiModelName.addActionListener(e -> {
-      String selected = (String)aiModelName.getSelectedItem();
-      if(selected != null && MODEL_ENDPOINT_MAP.containsKey(selected))
-      {
-        aiEndpoint.setText(MODEL_ENDPOINT_MAP.get(selected));
+        populateModelFields(aiList.getSelectedValue());
       }
     });
-    p.add(aiModelName, gbc);
-    row++;
+    JScrollPane listScroll = new JScrollPane(aiList);
+    listScroll.setPreferredSize(new Dimension(150, 0));
 
-    gbc.gridx = 0;
-    gbc.gridy = row;
-    p.add(new JLabel("API 地址："), gbc);
-    gbc.gridx = 1;
-    aiEndpoint = new JTextField(readProp("ai.endpoint", "https://api.deepseek.com/v1"), 30);
-    p.add(aiEndpoint, gbc);
-    row++;
+    // +/- 按钮
+    JPanel btnPanel = new JPanel(new FlowLayout(FlowLayout.LEFT, 2, 0));
+    JButton addBtn = new JButton("+");
+    addBtn.setToolTipText("添加大模型");
+    addBtn.addActionListener(e -> {
+      com.ctgu.lightdbviewer.ai.AiModelItem item = new com.ctgu.lightdbviewer.ai.AiModelItem();
+      item.setName("新模型");
+      aiListModel.addElement(item);
+      aiList.setSelectedValue(item, true);
+    });
+    JButton delBtn = new JButton("-");
+    delBtn.setToolTipText("删除大模型");
+    delBtn.addActionListener(e -> {
+      int idx = aiList.getSelectedIndex();
+      if(idx >= 0)
+      {
+        aiListModel.remove(idx);
+        if(aiListModel.size() > 0)
+        {
+          aiList.setSelectedIndex(Math.min(idx, aiListModel.size() - 1));
+        }
+      }
+    });
+    btnPanel.add(addBtn);
+    btnPanel.add(delBtn);
 
-    gbc.gridx = 0;
-    gbc.gridy = row;
-    p.add(new JLabel("API Key："), gbc);
-    gbc.gridx = 1;
-    aiApiKey = new JTextField(readProp("ai.api.key", ""), 30);
-    p.add(aiApiKey, gbc);
-    row++;
+    JPanel leftPanel = new JPanel(new BorderLayout());
+    leftPanel.add(listScroll, BorderLayout.CENTER);
+    leftPanel.add(btnPanel, BorderLayout.SOUTH);
 
-    gbc.gridx = 0;
-    gbc.gridy = row;
-    p.add(new JLabel("最大 Token："), gbc);
-    gbc.gridx = 1;
-    aiMaxTokens = new JSpinner(new SpinnerNumberModel(
-        Integer.parseInt(readProp("ai.max.tokens", "2048")), 256, 32768, 256));
-    p.add(aiMaxTokens, gbc);
-    row++;
+    // 右侧配置表单
+    JPanel formPanel = new JPanel(new GridBagLayout());
+    GridBagConstraints g = new GridBagConstraints();
+    g.insets = new Insets(3, 4, 3, 4);
+    g.anchor = GridBagConstraints.WEST;
+    g.fill = GridBagConstraints.HORIZONTAL;
 
-    gbc.gridx = 0;
-    gbc.gridy = row;
-    p.add(new JLabel("超时（秒）："), gbc);
-    gbc.gridx = 1;
-    aiTimeout = new JSpinner(new SpinnerNumberModel(
-        Integer.parseInt(readProp("ai.timeout", "30")), 5, 300, 5));
-    p.add(aiTimeout, gbc);
-    row++;
+    g.gridx = 0;
+    g.gridy = 0;
+    formPanel.add(new JLabel("AI助手名称："), g);
+    g.gridx = 1;
+    aiNameField = new JTextField(20);
+    formPanel.add(aiNameField, g);
+
+    g.gridx = 0;
+    g.gridy = 1;
+    formPanel.add(new JLabel("AI提供商："), g);
+    g.gridx = 1;
+    aiProviderField = new JTextField(20);
+    formPanel.add(aiProviderField, g);
+
+    g.gridx = 0;
+    g.gridy = 2;
+    formPanel.add(new JLabel("API主机："), g);
+    g.gridx = 1;
+    aiHostField = new JTextField(20);
+    formPanel.add(aiHostField, g);
+
+    g.gridx = 0;
+    g.gridy = 3;
+    formPanel.add(new JLabel("API端点："), g);
+    g.gridx = 1;
+    aiEndpointField = new JTextField(20);
+    formPanel.add(aiEndpointField, g);
+
+    g.gridx = 0;
+    g.gridy = 4;
+    formPanel.add(new JLabel("API密钥："), g);
+    g.gridx = 1;
+    aiApiKeyField = new JTextField(20);
+    formPanel.add(aiApiKeyField, g);
+
+    g.gridx = 0;
+    g.gridy = 5;
+    formPanel.add(new JLabel("模型："), g);
+    g.gridx = 1;
+    aiModelField = new JTextField(20);
+    formPanel.add(aiModelField, g);
+
+    g.gridx = 0;
+    g.gridy = 6;
+    formPanel.add(new JLabel("温度："), g);
+    g.gridx = 1;
+    aiTemperatureSpinner = new JSpinner(new SpinnerNumberModel(0.7, 0.0, 2.0, 0.1));
+    formPanel.add(aiTemperatureSpinner, g);
+
+    g.gridx = 0;
+    g.gridy = 7;
+    g.anchor = GridBagConstraints.NORTHWEST;
+    formPanel.add(new JLabel("说明："), g);
+    g.gridx = 1;
+    g.anchor = GridBagConstraints.WEST;
+    aiDescArea = new JTextArea(3, 20);
+    aiDescArea.setLineWrap(true);
+    aiDescArea.setWrapStyleWord(true);
+    formPanel.add(new JScrollPane(aiDescArea), g);
 
     // 测试连接按钮
-    gbc.gridx = 0;
-    gbc.gridy = row;
-    gbc.gridwidth = 1;
-    gbc.anchor = GridBagConstraints.NORTHEAST;
-    p.add(new JLabel(""), gbc);
-    gbc.gridx = 1;
-    gbc.anchor = GridBagConstraints.WEST;
+    g.gridx = 1;
+    g.gridy = 8;
+    g.anchor = GridBagConstraints.EAST;
+    g.fill = GridBagConstraints.NONE;
     JButton testBtn = new JButton("测试连接");
     testBtn.addActionListener(e -> testAiConnection());
-    p.add(testBtn, gbc);
-    row++;
+    JPanel testRow = new JPanel(new FlowLayout(FlowLayout.RIGHT, 4, 0));
+    testRow.add(testBtn);
+    formPanel.add(testRow, g);
 
-    // 测试结果展示
-    gbc.gridx = 0;
-    gbc.gridy = row;
-    gbc.gridwidth = 2;
-    gbc.anchor = GridBagConstraints.WEST;
-    gbc.fill = GridBagConstraints.HORIZONTAL;
-    gbc.weightx = 1;
+    // 测试结果
+    g.gridx = 0;
+    g.gridy = 9;
+    g.gridwidth = 2;
+    g.anchor = GridBagConstraints.WEST;
+    g.fill = GridBagConstraints.HORIZONTAL;
+    g.weightx = 1;
     aiTestResult = new JLabel(" ");
     aiTestResult.setFont(aiTestResult.getFont().deriveFont(Font.PLAIN, 12));
-    p.add(aiTestResult, gbc);
-    gbc.weightx = 0;
-    gbc.fill = GridBagConstraints.NONE;
-    row++;
+    formPanel.add(aiTestResult, g);
 
-    // 填充
-    gbc.gridx = 0;
-    gbc.gridy = row;
-    gbc.weighty = 1;
-    gbc.gridwidth = 2;
-    gbc.anchor = GridBagConstraints.CENTER;
-    p.add(Box.createVerticalGlue(), gbc);
+    JSplitPane split = new JSplitPane(JSplitPane.HORIZONTAL_SPLIT, leftPanel, formPanel);
+    split.setDividerLocation(160);
+    split.setResizeWeight(0);
+    split.setBorder(BorderFactory.createEmptyBorder());
+    assistantPanel.add(split, BorderLayout.CENTER);
+
+    // ── AI助手UI 区域 ──
+    JPanel uiPanel = new JPanel(new GridBagLayout());
+    uiPanel.setBorder(BorderFactory.createTitledBorder("AI助手UI"));
+    GridBagConstraints g2 = new GridBagConstraints();
+    g2.insets = new Insets(3, 4, 3, 4);
+    g2.anchor = GridBagConstraints.WEST;
+    g2.fill = GridBagConstraints.HORIZONTAL;
+
+    g2.gridx = 0;
+    g2.gridy = 0;
+    uiPanel.add(new JLabel("按下回车键时执行的操作："), g2);
+    g2.gridx = 1;
+    aiEnterActionCombo = new JComboBox<>(new String[] { "发送消息", "另起一行" });
+    aiEnterActionCombo.setSelectedIndex("newline".equals(readProp("ai.enter.action", "send")) ? 1 : 0);
+    uiPanel.add(aiEnterActionCombo, g2);
+
+    g2.gridx = 0;
+    g2.gridy = 1;
+    g2.gridwidth = 2;
+    aiCompareMode = new JCheckBox("与其他助手比较");
+    aiCompareMode.setSelected("true".equals(readProp("ai.compare.mode", "false")));
+    uiPanel.add(aiCompareMode, g2);
+
+    // ── 询问AI 区域 ──
+    JPanel askPanel = new JPanel(new GridBagLayout());
+    askPanel.setBorder(BorderFactory.createTitledBorder("询问AI"));
+    GridBagConstraints g3 = new GridBagConstraints();
+    g3.insets = new Insets(3, 4, 3, 4);
+    g3.anchor = GridBagConstraints.WEST;
+    g3.fill = GridBagConstraints.HORIZONTAL;
+
+    g3.gridx = 0;
+    g3.gridy = 0;
+    askPanel.add(new JLabel("语言："), g3);
+    g3.gridx = 1;
+    aiLanguageCombo = new JComboBox<>(new String[] { "简体中文", "English" });
+    aiLanguageCombo.setSelectedIndex("en".equals(readProp("ai.language", "zh")) ? 1 : 0);
+    askPanel.add(aiLanguageCombo, g3);
+
+    // 填充底部空间
+    g3.gridx = 0;
+    g3.gridy = 1;
+    g3.weighty = 1;
+    g3.gridwidth = 2;
+    askPanel.add(Box.createVerticalGlue(), g3);
+
+    // ── 组装 ──
+    JPanel centerPanel = new JPanel();
+    centerPanel.setLayout(new BoxLayout(centerPanel, BoxLayout.Y_AXIS));
+    centerPanel.add(assistantPanel);
+    centerPanel.add(Box.createVerticalStrut(6));
+    centerPanel.add(uiPanel);
+    centerPanel.add(Box.createVerticalStrut(6));
+    centerPanel.add(askPanel);
+
+    p.add(topRow, BorderLayout.NORTH);
+    p.add(centerPanel, BorderLayout.CENTER);
+
+    // 选中第一个模型
+    if(aiListModel.size() > 0 && aiList.getSelectedIndex() < 0)
+    {
+      aiList.setSelectedIndex(0);
+    }
 
     return p;
+  }
+
+  private void loadAiModelsFromConfig()
+  {
+    aiListModel.clear();
+    int count = Integer.parseInt(readProp("ai.models.count", "0"));
+    if(count == 0)
+    {
+      com.ctgu.lightdbviewer.ai.AiModelItem legacy = new com.ctgu.lightdbviewer.ai.AiModelItem();
+      legacy.setName(readProp("ai.model", "deepseek-chat"));
+      legacy.setModel(readProp("ai.model", "deepseek-chat"));
+      legacy.setEndpoint(readProp("ai.endpoint", "https://api.deepseek.com/v1"));
+      legacy.setApiKey(readProp("ai.api.key", ""));
+      legacy.setProvider("DeepSeek");
+      legacy.setTemperature(Double.parseDouble(readProp("ai.temperature", "0.7")));
+      aiListModel.addElement(legacy);
+      return;
+    }
+    for(int i = 0; i < count; i++)
+    {
+      String pfx = "ai.model." + i + ".";
+      com.ctgu.lightdbviewer.ai.AiModelItem item = new com.ctgu.lightdbviewer.ai.AiModelItem();
+      item.setName(readProp(pfx + "name", ""));
+      item.setProvider(readProp(pfx + "provider", ""));
+      item.setHost(readProp(pfx + "host", ""));
+      item.setEndpoint(readProp(pfx + "endpoint", ""));
+      item.setApiKey(readProp(pfx + "apiKey", ""));
+      item.setModel(readProp(pfx + "model", ""));
+      item.setTemperature(Double.parseDouble(readProp(pfx + "temperature", "0.7")));
+      item.setDescription(readProp(pfx + "description", ""));
+      aiListModel.addElement(item);
+    }
+  }
+
+  private void populateModelFields(com.ctgu.lightdbviewer.ai.AiModelItem item)
+  {
+    if(item == null)
+    {
+      aiNameField.setText("");
+      aiProviderField.setText("");
+      aiHostField.setText("");
+      aiEndpointField.setText("");
+      aiApiKeyField.setText("");
+      aiModelField.setText("");
+      aiTemperatureSpinner.setValue(0.7);
+      aiDescArea.setText("");
+      return;
+    }
+    aiNameField.setText(item.getName());
+    aiProviderField.setText(item.getProvider());
+    aiHostField.setText(item.getHost());
+    aiEndpointField.setText(item.getEndpoint());
+    aiApiKeyField.setText(item.getApiKey());
+    aiModelField.setText(item.getModel());
+    aiTemperatureSpinner.setValue(item.getTemperature());
+    aiDescArea.setText(item.getDescription());
+  }
+
+  private com.ctgu.lightdbviewer.ai.AiModelItem getCurrentAiModelItem()
+  {
+    com.ctgu.lightdbviewer.ai.AiModelItem item = aiList.getSelectedValue();
+    if(item == null)
+    {
+      return null;
+    }
+    item.setName(aiNameField.getText());
+    item.setProvider(aiProviderField.getText());
+    item.setHost(aiHostField.getText());
+    item.setEndpoint(aiEndpointField.getText());
+    item.setApiKey(aiApiKeyField.getText());
+    item.setModel(aiModelField.getText());
+    item.setTemperature((Double)aiTemperatureSpinner.getValue());
+    item.setDescription(aiDescArea.getText());
+    return item;
   }
 
   private void testAiConnection()
   {
     aiTestResult.setForeground(Color.BLACK);
     aiTestResult.setText("正在测试连接，请稍候...");
-    String apiKey = aiApiKey.getText().trim();
-    String endpoint = aiEndpoint.getText().trim();
-    String model = (String)aiModelName.getSelectedItem();
+    String apiKey = aiApiKeyField.getText().trim();
+    String endpoint = aiEndpointField.getText().trim();
+    String model = aiModelField.getText().trim();
     if(apiKey.isBlank())
     {
       aiTestResult.setForeground(Color.RED);
       aiTestResult.setText("请先填写 API Key");
       return;
     }
-    if(model == null || model.isBlank())
+    if(model.isEmpty())
     {
       aiTestResult.setForeground(Color.RED);
-      aiTestResult.setText("请选择大模型");
+      aiTestResult.setText("请填写模型名称");
       return;
     }
     new SwingWorker<String, Void>()
@@ -481,7 +658,6 @@ public class SettingsTab extends AbstractTab
               .connectTimeout(java.time.Duration.ofSeconds(10))
               .build();
 
-          // 通过 chat completions 发一条简单消息验证 API 可用性
           String body = """
               {"model":"%s","messages":[{"role":"user","content":"hi"}],"max_tokens":5}
               """.formatted(model);
@@ -518,7 +694,6 @@ public class SettingsTab extends AbstractTab
             return result.toString();
           }
 
-          // 查询余额（DeepSeek 专有接口）
           try
           {
             java.net.http.HttpRequest balanceReq = java.net.http.HttpRequest.newBuilder()
@@ -536,7 +711,6 @@ public class SettingsTab extends AbstractTab
           }
           catch(Exception ignored)
           {
-            // 非 DeepSeek 或接口不可用，忽略
           }
         }
         catch(java.net.ConnectException e)
@@ -577,6 +751,45 @@ public class SettingsTab extends AbstractTab
         }
       }
     }.execute();
+  }
+
+  private void saveAiModelsToConfig()
+  {
+    getCurrentAiModelItem();
+    int oldCount = Integer.parseInt(readProp("ai.models.count", "0"));
+    for(int i = 0; i < oldCount; i++)
+    {
+      String pfx = "ai.model." + i + ".";
+      writeProp(pfx + "name", "");
+      writeProp(pfx + "provider", "");
+      writeProp(pfx + "host", "");
+      writeProp(pfx + "endpoint", "");
+      writeProp(pfx + "apiKey", "");
+      writeProp(pfx + "model", "");
+      writeProp(pfx + "temperature", "");
+      writeProp(pfx + "description", "");
+    }
+    writeProp("ai.models.count", String.valueOf(aiListModel.size()));
+    for(int i = 0; i < aiListModel.size(); i++)
+    {
+      com.ctgu.lightdbviewer.ai.AiModelItem item = aiListModel.get(i);
+      String pfx = "ai.model." + i + ".";
+      writeProp(pfx + "name", item.getName());
+      writeProp(pfx + "provider", item.getProvider());
+      writeProp(pfx + "host", item.getHost());
+      writeProp(pfx + "endpoint", item.getEndpoint());
+      writeProp(pfx + "apiKey", item.getApiKey());
+      writeProp(pfx + "model", item.getModel());
+      writeProp(pfx + "temperature", String.valueOf(item.getTemperature()));
+      writeProp(pfx + "description", item.getDescription());
+    }
+    if(aiListModel.size() > 0)
+    {
+      com.ctgu.lightdbviewer.ai.AiModelItem first = aiListModel.get(0);
+      writeProp("ai.model", first.getModel());
+      writeProp("ai.endpoint", first.getEndpoint());
+      writeProp("ai.api.key", first.getApiKey());
+    }
   }
 
   // ================================================================
@@ -680,12 +893,12 @@ public class SettingsTab extends AbstractTab
     }
 
     // AI 配置
+    writeProp("ai.show", String.valueOf(aiShow.isSelected()));
     writeProp("ai.enabled", String.valueOf(aiEnabled.isSelected()));
-    writeProp("ai.model", (String)aiModelName.getSelectedItem());
-    writeProp("ai.endpoint", aiEndpoint.getText());
-    writeProp("ai.api.key", aiApiKey.getText());
-    writeProp("ai.max.tokens", aiMaxTokens.getValue().toString());
-    writeProp("ai.timeout", aiTimeout.getValue().toString());
+    saveAiModelsToConfig();
+    writeProp("ai.enter.action", aiEnterActionCombo.getSelectedIndex() == 0 ? "send" : "newline");
+    writeProp("ai.compare.mode", String.valueOf(aiCompareMode.isSelected()));
+    writeProp("ai.language", aiLanguageCombo.getSelectedIndex() == 0 ? "zh" : "en");
 
     // 文件位置
     writeProp("file.config.path", configFilePath.getText());
